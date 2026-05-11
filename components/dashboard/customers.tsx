@@ -379,8 +379,10 @@ export function CustomersPage() {
   const fetchCustomers = async () => {
     try {
       setIsFetching(true);
-      const data = await apiClient.get<Customer[]>("/customers");
-      setCustomers(data);
+      const response = await apiClient.get<{ data: Customer[]; total: number }>(
+        "/customers",
+      );
+      setCustomers(response.data || []);
     } catch (error) {
       console.error("Failed to fetch customers:", error);
       toast.error(t.messages.error.general);
@@ -509,7 +511,7 @@ export function CustomersPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">
-                {customers.reduce((acc, c) => acc + c.cars.length, 0)}
+                {customers?.reduce((acc, c) => acc + c.cars.length, 0)}
               </p>
               <p className="text-sm text-muted-foreground">إجمالي السيارات</p>
             </div>
@@ -522,7 +524,7 @@ export function CustomersPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">
-                {customers.reduce((acc, c) => acc + c.usageCount, 0)}
+                {customers?.reduce((acc, c) => acc + c.usageCount, 0)}
               </p>
               <p className="text-sm text-muted-foreground">إجمالي الزيارات</p>
             </div>

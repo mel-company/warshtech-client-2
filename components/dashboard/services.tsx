@@ -393,8 +393,10 @@ export function ServicesPage() {
   const fetchServices = async () => {
     try {
       setIsFetching(true);
-      const data = await apiClient.get<Service[]>("/services");
-      setServices(data);
+      const response = await apiClient.get<{ data: Service[]; total: number }>(
+        "/services",
+      );
+      setServices(response.data || []);
     } catch (error) {
       console.error("Failed to fetch services:", error);
       toast.error(t.messages.error.general);

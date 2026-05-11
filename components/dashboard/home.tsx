@@ -275,8 +275,8 @@ export function DashboardHome() {
 
   const fetchDashboard = async () => {
     try {
-      const data = await apiClient.get<DashboardStats>("/dashboard");
-      setStats(data);
+      const response = await apiClient.get<DashboardStats>("/dashboard");
+      setStats(response);
     } catch (error) {
       console.error("Failed to fetch dashboard:", error);
     } finally {
@@ -286,11 +286,17 @@ export function DashboardHome() {
 
   const fetchServices = async () => {
     try {
-      const data =
-        await apiClient.get<
-          Array<{ id: string; name: string; price: number; isActive: boolean }>
-        >("/services");
-      setServices(data.filter((s) => s.isActive).slice(0, 5));
+      const response = await apiClient.get<{
+        data: Array<{
+          id: string;
+          name: string;
+          price: number;
+          isActive: boolean;
+        }>;
+        total: number;
+      }>("/services");
+      const data = response.data || [];
+      setServices(data.filter((s: any) => s.isActive).slice(0, 5));
     } catch (error) {
       console.error("Failed to fetch services:", error);
     }

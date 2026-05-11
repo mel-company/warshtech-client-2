@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { AuthUser, AuthState } from "@/types";
-import { apiClient } from "@/lib/api";
+import { apiClient, setTenantId, clearTenantId } from "@/lib/api";
 
 export interface TenantInfo {
   id: string;
@@ -52,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedUser = localStorage.getItem("auth_user");
     const storedTenant = localStorage.getItem("auth_tenant");
     const accessToken = localStorage.getItem("access_token");
+    const storedTenantId = localStorage.getItem("tenant_id");
 
     if (storedUser && accessToken) {
       try {
@@ -59,7 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const tenant = storedTenant
           ? (JSON.parse(storedTenant) as TenantInfo)
           : null;
-        if (tenant) setTenantState(tenant);
+        if (tenant) {
+          setTenantState(tenant);
+          setTenantId(tenant.id);
+        } else if (storedTenantId) {
+          setTenantId(storedTenantId);
+        }
         setState({ user, isAuthenticated: true, isLoading: false });
       } catch {
         setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -67,6 +73,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } else {
       setState({ user: null, isAuthenticated: false, isLoading: false });
     }
+  }, []);
+
+  // Refresh token every 10 minutes
+  React.useEffect(() => {
+    const refreshToken = localStorage.getItem("refresh_token");
+    if (!refreshToken) return;
+
+    const refreshAccessToken = async () => {
+      try {
+        const response = await apiClient.post<{
+          accessToken: string;
+          refreshToken: string;
+        }>("/auth/refresh", { refreshToken });
+
+        localStorage.setItem("access_token", response.accessToken);
+        localStorage.setItem("refresh_token", response.refreshToken);
+      } catch (error) {
+        console.error("Token refresh failed:", error);
+        // If refresh fails, logout user
+        logout();
+      }
+    };
+
+    // Refresh immediately, then every 10 minutes
+    refreshAccessToken();
+    const interval = setInterval(refreshAccessToken, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const sendOTP = React.useCallback(
@@ -104,7 +138,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("access_token", response.accessToken);
         localStorage.setItem("refresh_token", response.refreshToken);
         localStorage.setItem("auth_tenant", JSON.stringify(response.tenant));
+        localStorage.setItem("tenant_id", response.tenant.id);
         setTenantState(response.tenant);
+        setTenantId(response.tenant.id);
         setState({
           user: response.user,
           isAuthenticated: true,
@@ -150,7 +186,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem("access_token", response.accessToken);
         localStorage.setItem("refresh_token", response.refreshToken);
         localStorage.setItem("auth_tenant", JSON.stringify(response.tenant));
+        localStorage.setItem("tenant_id", response.tenant.id);
         setTenantState(response.tenant);
+        setTenantId(response.tenant.id);
         setState({
           user: response.user,
           isAuthenticated: true,
@@ -171,6 +209,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("auth_tenant");
+    localStorage.removeItem("tenant_id");
+    clearTenantId();
     setState({ user: null, isAuthenticated: false, isLoading: false });
     setPendingPhone(null);
     setTenantState(null);

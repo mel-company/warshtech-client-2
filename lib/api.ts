@@ -21,7 +21,19 @@ export function setTenantId(tenantId: string) {
 export function getTenantId(): string | null {
   if (currentTenantId) return currentTenantId;
   if (typeof window !== "undefined") {
+    // Try old key first, then new auth_tenant key
     currentTenantId = localStorage.getItem("tenant_id");
+    if (!currentTenantId) {
+      const storedTenant = localStorage.getItem("auth_tenant");
+      if (storedTenant) {
+        try {
+          const tenant = JSON.parse(storedTenant);
+          currentTenantId = tenant.id;
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
   }
   return currentTenantId;
 }

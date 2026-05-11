@@ -399,8 +399,10 @@ export function ProductsPage() {
   const fetchProducts = async () => {
     try {
       setIsFetching(true);
-      const data = await apiClient.get<Product[]>("/products");
-      setProducts(data);
+      const response = await apiClient.get<{ data: Product[]; total: number }>(
+        "/products",
+      );
+      setProducts(response.data || []);
     } catch (error) {
       console.error("Failed to fetch products:", error);
       toast.error(t.messages.error.general);

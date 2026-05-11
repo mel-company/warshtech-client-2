@@ -431,9 +431,11 @@ export function EmployeesPage() {
   const fetchEmployees = React.useCallback(async () => {
     setIsFetching(true);
     try {
-      const response = await apiClient.get<{ data: Employee[] }>("/employees");
+      const response = await apiClient.get<{ data: Employee[]; total: number }>(
+        "/employees",
+      );
       setEmployees(
-        response.data.map((e) => ({
+        (response.data || []).map((e) => ({
           ...e,
           hireDate: new Date(e.hireDate),
           createdAt: new Date(e.createdAt),
