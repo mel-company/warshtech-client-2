@@ -1,66 +1,98 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Car, Phone, KeyRound, ArrowLeft, Loader2 } from "lucide-react"
-import { useAuth } from "@/lib/auth"
-import { t } from "@/lib/i18n"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Car,
+  Phone,
+  KeyRound,
+  ArrowLeft,
+  Loader2,
+  Building2,
+} from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { t } from "@/lib/i18n";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from "@/components/ui/input-otp"
+} from "@/components/ui/input-otp";
 
-type AuthStep = "phone" | "otp"
+type AuthStep = "credentials" | "otp";
 
 export function LoginPage() {
-  const router = useRouter()
-  const { sendOTP, verifyOTP, isLoading } = useAuth()
-  const [step, setStep] = useState<AuthStep>("phone")
-  const [phone, setPhone] = useState("")
-  const [otp, setOtp] = useState("")
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const { sendOTP, verifyOTP, login, isLoading } = useAuth();
+  const [step, setStep] = useState<AuthStep>("credentials");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [tenantId, setTenantId] = useState("");
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!phone || !password || !tenantId) {
+      setError(t("auth.fillAllFields"));
+      return;
+    }
+
+    const success = await login(phone, password, tenantId);
+    if (success) {
+      router.push("/dashboard");
+    } else {
+      setError(t("auth.loginFailed"));
+    }
+  };
 
   const handleSendOTP = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-    
+    e.preventDefault();
+    setError("");
+
     if (!phone || phone.length < 10) {
-      setError(t("auth.phoneRequired"))
-      return
+      setError(t("auth.phoneRequired"));
+      return;
     }
 
-    const success = await sendOTP(phone)
+    const success = await sendOTP(phone);
     if (success) {
-      setStep("otp")
+      setStep("otp");
     } else {
-      setError(t("auth.otpSendFailed"))
+      setError(t("auth.otpSendFailed"));
     }
-  }
+  };
 
   const handleVerifyOTP = async (value: string) => {
-    setOtp(value)
+    setOtp(value);
     if (value.length === 6) {
-      setError("")
-      const success = await verifyOTP(phone, value)
+      setError("");
+      const success = await verifyOTP(phone, value);
       if (success) {
-        router.push("/dashboard")
+        router.push("/dashboard");
       } else {
-        setError(t("auth.invalidOTP"))
-        setOtp("")
+        setError(t("auth.invalidOTP"));
+        setOtp("");
       }
     }
-  }
+  };
 
   const handleBack = () => {
-    setStep("phone")
-    setOtp("")
-    setError("")
-  }
+    setStep("credentials");
+    setOtp("");
+    setError("");
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -71,24 +103,41 @@ export function LoginPage() {
             <Car className="w-8 h-8 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">{t("appName")}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t("auth.welcomeBack")}</p>
+          <p className="text-muted-foreground text-sm mt-1">
+            {t("auth.welcomeBack")}
+          </p>
         </div>
 
         <Card className="border-border/50 shadow-lg">
           <CardHeader className="text-center pb-2">
             <CardTitle className="text-xl">
-              {step === "phone" ? t("auth.login") : t("auth.verifyOTP")}
+              {step === "credentials" ? t("auth.login") : t("auth.verifyOTP")}
             </CardTitle>
             <CardDescription>
-              {step === "phone" 
-                ? t("auth.enterPhone") 
-                : t("auth.otpSent").replace("{phone}", phone)
-              }
+              {step === "credentials"
+                ? t("auth.enterCredentials")
+                : t("auth.otpSentTo").replace("{phone}", phone)}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === "phone" ? (
-              <form onSubmit={handleSendOTP} className="space-y-4">
+            {step === "credentials" ? (
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tenant">{t("auth.tenant")}</Label>
+                  <div className="relative">
+                    <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="tenant"
+                      type="text"
+                      placeholder={t("auth.tenantPlaceholder")}
+                      value={tenantId}
+                      onChange={(e) => setTenantId(e.target.value)}
+                      className="pl-4 pr-10 text-left"
+                      dir="ltr"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">{t("auth.phone")}</Label>
                   <div className="relative">
@@ -105,9 +154,27 @@ export function LoginPage() {
                     />
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">{t("auth.password")}</Label>
+                  <div className="relative">
+                    <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-4 pr-10 text-left"
+                      dir="ltr"
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
 
                 {error && (
-                  <p className="text-sm text-destructive text-center">{error}</p>
+                  <p className="text-sm text-destructive text-center">
+                    {error}
+                  </p>
                 )}
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -119,9 +186,29 @@ export function LoginPage() {
                   ) : (
                     <>
                       <KeyRound className="ml-2 h-4 w-4" />
-                      {t("auth.sendOTP")}
+                      {t("auth.login")}
                     </>
                   )}
+                </Button>
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">
+                      {t("auth.or")}
+                    </span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleSendOTP}
+                  disabled={isLoading}
+                >
+                  <Phone className="ml-2 h-4 w-4" />
+                  {t("auth.loginWithOTP")}
                 </Button>
               </form>
             ) : (
@@ -161,9 +248,7 @@ export function LoginPage() {
                     </div>
                   )}
 
-                  {error && (
-                    <p className="text-sm text-destructive">{error}</p>
-                  )}
+                  {error && <p className="text-sm text-destructive">{error}</p>}
 
                   <Button
                     type="button"
@@ -180,11 +265,22 @@ export function LoginPage() {
           </CardContent>
         </Card>
 
+        {/* Register link */}
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          {t("auth.noAccount")}{" "}
+          <a
+            href="/register"
+            className="text-primary hover:underline font-medium"
+          >
+            {t("auth.createAccount")}
+          </a>
+        </p>
+
         {/* Demo hint */}
-        <p className="text-center text-xs text-muted-foreground mt-4">
+        <p className="text-center text-xs text-muted-foreground mt-2">
           {t("auth.demoHint")}
         </p>
       </div>
     </div>
-  )
+  );
 }

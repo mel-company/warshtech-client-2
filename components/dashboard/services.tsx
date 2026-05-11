@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import * as React from 'react'
+import * as React from "react";
 import {
   Plus,
   Search,
@@ -20,34 +20,34 @@ import {
   Wind,
   Settings,
   Zap,
-} from 'lucide-react'
-import { toast } from 'sonner'
+} from "lucide-react";
+import { toast } from "sonner";
 
-import { cn } from '@/lib/utils'
-import { useTranslation } from '@/lib/i18n'
-import type { Service, ServiceFormData } from '@/types'
-import { mockServices } from '@/lib/mock-data'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
+import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
+import type { Service, ServiceFormData } from "@/types";
+import apiClient from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ResponsiveModal, ConfirmDialog } from '@/components/responsive-modal'
+} from "@/components/ui/dropdown-menu";
+import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
 
 // =============================================================================
 // Icon Map
@@ -65,65 +65,70 @@ const iconMap: Record<string, React.ElementType> = {
   Settings,
   Wrench,
   Zap,
-}
+};
 
 const iconOptions = [
-  { value: 'Droplets', label: 'قطرة (زيوت)' },
-  { value: 'Car', label: 'سيارة' },
-  { value: 'Sparkles', label: 'لمعان (تنظيف)' },
-  { value: 'Sun', label: 'شمس (تلميع)' },
-  { value: 'Search', label: 'فحص' },
-  { value: 'Circle', label: 'إطار' },
-  { value: 'Battery', label: 'بطارية' },
-  { value: 'Wind', label: 'تكييف' },
-  { value: 'Wrench', label: 'صيانة عامة' },
-  { value: 'Zap', label: 'كهرباء' },
-  { value: 'Settings', label: 'إعدادات' },
-]
+  { value: "Droplets", label: "قطرة (زيوت)" },
+  { value: "Car", label: "سيارة" },
+  { value: "Sparkles", label: "لمعان (تنظيف)" },
+  { value: "Sun", label: "شمس (تلميع)" },
+  { value: "Search", label: "فحص" },
+  { value: "Circle", label: "إطار" },
+  { value: "Battery", label: "بطارية" },
+  { value: "Wind", label: "تكييف" },
+  { value: "Wrench", label: "صيانة عامة" },
+  { value: "Zap", label: "كهرباء" },
+  { value: "Settings", label: "إعدادات" },
+];
 
 // =============================================================================
 // Service Form Component
 // =============================================================================
 
 interface ServiceFormProps {
-  service?: Service
-  onSubmit: (data: ServiceFormData) => void
-  onCancel: () => void
-  isLoading?: boolean
+  service?: Service;
+  onSubmit: (data: ServiceFormData) => void;
+  onCancel: () => void;
+  isLoading?: boolean;
 }
 
-function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProps) {
-  const { t } = useTranslation()
+function ServiceForm({
+  service,
+  onSubmit,
+  onCancel,
+  isLoading,
+}: ServiceFormProps) {
+  const { t } = useTranslation();
   const [formData, setFormData] = React.useState<ServiceFormData>({
-    name: service?.name || '',
+    name: service?.name || "",
     price: service?.price || 0,
-    icon: service?.icon || 'Wrench',
-    description: service?.description || '',
+    icon: service?.icon || "Wrench",
+    description: service?.description || "",
     estimatedDuration: service?.estimatedDuration || 30,
     isActive: service?.isActive ?? true,
-  })
+  });
 
   const handleChange = (
     field: keyof ServiceFormData,
-    value: string | number | boolean
+    value: string | number | boolean,
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!formData.name.trim()) {
-      toast.error(t.validation.required)
-      return
+      toast.error(t.validation.required);
+      return;
     }
     if (formData.price <= 0) {
-      toast.error('السعر يجب أن يكون أكبر من صفر')
-      return
+      toast.error("السعر يجب أن يكون أكبر من صفر");
+      return;
     }
-    onSubmit(formData)
-  }
+    onSubmit(formData);
+  };
 
-  const IconComponent = iconMap[formData.icon || 'Wrench'] || Wrench
+  const IconComponent = iconMap[formData.icon || "Wrench"] || Wrench;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -141,7 +146,7 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
           <Input
             id="name"
             value={formData.name}
-            onChange={(e) => handleChange('name', e.target.value)}
+            onChange={(e) => handleChange("name", e.target.value)}
             placeholder="اسم الخدمة"
             required
           />
@@ -152,7 +157,7 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
           <Textarea
             id="description"
             value={formData.description}
-            onChange={(e) => handleChange('description', e.target.value)}
+            onChange={(e) => handleChange("description", e.target.value)}
             placeholder="وصف الخدمة (اختياري)"
             rows={2}
           />
@@ -162,14 +167,14 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
           <Label htmlFor="icon">{t.services.icon}</Label>
           <Select
             value={formData.icon}
-            onValueChange={(value) => handleChange('icon', value)}
+            onValueChange={(value) => handleChange("icon", value)}
           >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {iconOptions.map((option) => {
-                const Icon = iconMap[option.value]
+                const Icon = iconMap[option.value];
                 return (
                   <SelectItem key={option.value} value={option.value}>
                     <div className="flex items-center gap-2">
@@ -177,7 +182,7 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
                       <span>{option.label}</span>
                     </div>
                   </SelectItem>
-                )
+                );
               })}
             </SelectContent>
           </Select>
@@ -195,7 +200,9 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
               min={0}
               step={0.01}
               value={formData.price}
-              onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
+              onChange={(e) =>
+                handleChange("price", parseFloat(e.target.value) || 0)
+              }
               dir="ltr"
               className="text-left pl-12"
             />
@@ -212,7 +219,9 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
               type="number"
               min={0}
               value={formData.estimatedDuration}
-              onChange={(e) => handleChange('estimatedDuration', parseInt(e.target.value) || 0)}
+              onChange={(e) =>
+                handleChange("estimatedDuration", parseInt(e.target.value) || 0)
+              }
               dir="ltr"
               className="text-left pl-12"
             />
@@ -228,12 +237,14 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
         <div className="space-y-0.5">
           <Label>{t.labels.status}</Label>
           <p className="text-sm text-muted-foreground">
-            {formData.isActive ? 'الخدمة متاحة للعملاء' : 'الخدمة غير متاحة حالياً'}
+            {formData.isActive
+              ? "الخدمة متاحة للعملاء"
+              : "الخدمة غير متاحة حالياً"}
           </p>
         </div>
         <Switch
           checked={formData.isActive}
-          onCheckedChange={(checked) => handleChange('isActive', checked)}
+          onCheckedChange={(checked) => handleChange("isActive", checked)}
         />
       </div>
 
@@ -247,7 +258,7 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
         </Button>
       </div>
     </form>
-  )
+  );
 }
 
 // =============================================================================
@@ -255,18 +266,28 @@ function ServiceForm({ service, onSubmit, onCancel, isLoading }: ServiceFormProp
 // =============================================================================
 
 interface ServiceCardProps {
-  service: Service
-  onEdit: (service: Service) => void
-  onDelete: (service: Service) => void
-  onToggleActive: (service: Service) => void
+  service: Service;
+  onEdit: (service: Service) => void;
+  onDelete: (service: Service) => void;
+  onToggleActive: (service: Service) => void;
 }
 
-function ServiceCard({ service, onEdit, onDelete, onToggleActive }: ServiceCardProps) {
-  const { t } = useTranslation()
-  const IconComponent = iconMap[service.icon || 'Wrench'] || Wrench
+function ServiceCard({
+  service,
+  onEdit,
+  onDelete,
+  onToggleActive,
+}: ServiceCardProps) {
+  const { t } = useTranslation();
+  const IconComponent = iconMap[service.icon || "Wrench"] || Wrench;
 
   return (
-    <Card className={cn('card-hover group relative', !service.isActive && 'opacity-60')}>
+    <Card
+      className={cn(
+        "card-hover group relative",
+        !service.isActive && "opacity-60",
+      )}
+    >
       <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -304,15 +325,19 @@ function ServiceCard({ service, onEdit, onDelete, onToggleActive }: ServiceCardP
       </div>
 
       <CardContent className="p-6 text-center">
-        <div className={cn(
-          'mx-auto flex size-16 items-center justify-center rounded-2xl mb-4',
-          service.isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-        )}>
+        <div
+          className={cn(
+            "mx-auto flex size-16 items-center justify-center rounded-2xl mb-4",
+            service.isActive
+              ? "bg-primary/10 text-primary"
+              : "bg-muted text-muted-foreground",
+          )}
+        >
           <IconComponent className="size-8" />
         </div>
 
         <h3 className="font-semibold text-lg">{service.name}</h3>
-        
+
         {service.description && (
           <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
             {service.description}
@@ -327,18 +352,20 @@ function ServiceCard({ service, onEdit, onDelete, onToggleActive }: ServiceCardP
           {service.estimatedDuration && (
             <div className="flex items-center gap-1 text-muted-foreground">
               <Clock className="size-3.5" />
-              <span>{service.estimatedDuration} {t.services.minutes}</span>
+              <span>
+                {service.estimatedDuration} {t.services.minutes}
+              </span>
             </div>
           )}
         </div>
 
         <div className="mt-4">
           <Badge
-            variant={service.isActive ? 'default' : 'secondary'}
+            variant={service.isActive ? "default" : "secondary"}
             className={cn(
               service.isActive
-                ? 'bg-success/10 text-success border-success/20'
-                : 'bg-muted text-muted-foreground'
+                ? "bg-success/10 text-success border-success/20"
+                : "bg-muted text-muted-foreground",
             )}
           >
             {service.isActive ? t.labels.active : t.labels.inactive}
@@ -346,7 +373,7 @@ function ServiceCard({ service, onEdit, onDelete, onToggleActive }: ServiceCardP
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // =============================================================================
@@ -354,104 +381,128 @@ function ServiceCard({ service, onEdit, onDelete, onToggleActive }: ServiceCardP
 // =============================================================================
 
 export function ServicesPage() {
-  const { t } = useTranslation()
-  const [services, setServices] = React.useState<Service[]>(mockServices)
-  const [searchQuery, setSearchQuery] = React.useState('')
-  const [showInactive, setShowInactive] = React.useState(true)
-  const [isFormOpen, setIsFormOpen] = React.useState(false)
-  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false)
-  const [editingService, setEditingService] = React.useState<Service | undefined>()
-  const [deletingService, setDeletingService] = React.useState<Service | undefined>()
-  const [isLoading, setIsLoading] = React.useState(false)
+  const { t } = useTranslation();
+  const [services, setServices] = React.useState<Service[]>([]);
+  const [isFetching, setIsFetching] = React.useState(true);
+
+  // Fetch services on mount
+  React.useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      setIsFetching(true);
+      const data = await apiClient.get<Service[]>("/services");
+      setServices(data);
+    } catch (error) {
+      console.error("Failed to fetch services:", error);
+      toast.error(t.messages.error.general);
+    } finally {
+      setIsFetching(false);
+    }
+  };
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [showInactive, setShowInactive] = React.useState(true);
+  const [isFormOpen, setIsFormOpen] = React.useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
+  const [editingService, setEditingService] = React.useState<
+    Service | undefined
+  >();
+  const [deletingService, setDeletingService] = React.useState<
+    Service | undefined
+  >();
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const filteredServices = React.useMemo(() => {
-    let result = services
+    let result = services;
 
     if (!showInactive) {
-      result = result.filter((s) => s.isActive)
+      result = result.filter((s) => s.isActive);
     }
 
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+      const query = searchQuery.toLowerCase();
       result = result.filter(
         (s) =>
           s.name.toLowerCase().includes(query) ||
-          s.description?.toLowerCase().includes(query)
-      )
+          s.description?.toLowerCase().includes(query),
+      );
     }
 
-    return result
-  }, [services, searchQuery, showInactive])
+    return result;
+  }, [services, searchQuery, showInactive]);
 
   const stats = React.useMemo(() => {
-    const active = services.filter((s) => s.isActive).length
-    const inactive = services.filter((s) => !s.isActive).length
+    const active = services.filter((s) => s.isActive).length;
+    const inactive = services.filter((s) => !s.isActive).length;
     const avgPrice = services.length
-      ? Math.round(services.reduce((acc, s) => acc + s.price, 0) / services.length)
-      : 0
-    return { total: services.length, active, inactive, avgPrice }
-  }, [services])
+      ? Math.round(
+          services.reduce((acc, s) => acc + s.price, 0) / services.length,
+        )
+      : 0;
+    return { total: services.length, active, inactive, avgPrice };
+  }, [services]);
 
   const handleAddNew = () => {
-    setEditingService(undefined)
-    setIsFormOpen(true)
-  }
+    setEditingService(undefined);
+    setIsFormOpen(true);
+  };
 
   const handleEdit = (service: Service) => {
-    setEditingService(service)
-    setIsFormOpen(true)
-  }
+    setEditingService(service);
+    setIsFormOpen(true);
+  };
 
   const handleDelete = (service: Service) => {
-    setDeletingService(service)
-    setIsDeleteOpen(true)
-  }
+    setDeletingService(service);
+    setIsDeleteOpen(true);
+  };
 
   const handleToggleActive = (service: Service) => {
     setServices((prev) =>
       prev.map((s) =>
-        s.id === service.id ? { ...s, isActive: !s.isActive, updatedAt: new Date() } : s
-      )
-    )
-    toast.success(service.isActive ? 'تم تعطيل الخدمة' : 'تم تفعيل الخدمة')
-  }
+        s.id === service.id
+          ? { ...s, isActive: !s.isActive, updatedAt: new Date() }
+          : s,
+      ),
+    );
+    toast.success(service.isActive ? "تم تعطيل الخدمة" : "تم تفعيل الخدمة");
+  };
 
   const handleSubmit = async (data: ServiceFormData) => {
-    setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    if (editingService) {
-      setServices((prev) =>
-        prev.map((s) =>
-          s.id === editingService.id
-            ? { ...s, ...data, updatedAt: new Date() }
-            : s
-        )
-      )
-      toast.success(t.messages.success.updated)
-    } else {
-      const newService: Service = {
-        id: `service-${Date.now()}`,
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+    setIsLoading(true);
+    try {
+      if (editingService) {
+        await apiClient.patch(`/services/${editingService.id}`, data);
+        toast.success(t.messages.success.updated);
+      } else {
+        await apiClient.post("/services", data);
+        toast.success(t.messages.success.created);
       }
-      setServices((prev) => [newService, ...prev])
-      toast.success(t.messages.success.created)
+      await fetchServices();
+      setIsFormOpen(false);
+      setEditingService(undefined);
+    } catch (error) {
+      console.error("Failed to save service:", error);
+      toast.error(t.messages.error.general);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false)
-    setIsFormOpen(false)
-    setEditingService(undefined)
-  }
+  };
 
   const handleConfirmDelete = async () => {
-    if (!deletingService) return
-    await new Promise((resolve) => setTimeout(resolve, 300))
-    setServices((prev) => prev.filter((s) => s.id !== deletingService.id))
-    toast.success(t.messages.success.deleted)
-    setDeletingService(undefined)
-  }
+    if (!deletingService) return;
+    try {
+      await apiClient.delete(`/services/${deletingService.id}`);
+      toast.success(t.messages.success.deleted);
+      await fetchServices();
+      setDeletingService(undefined);
+    } catch (error) {
+      console.error("Failed to delete service:", error);
+      toast.error(t.messages.error.general);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -459,9 +510,7 @@ export function ServicesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold">{t.services.title}</h2>
-          <p className="text-muted-foreground">
-            إدارة خدمات المركز والأسعار
-          </p>
+          <p className="text-muted-foreground">إدارة خدمات المركز والأسعار</p>
         </div>
         <Button onClick={handleAddNew}>
           <Plus className="ml-1 size-4" />
@@ -510,7 +559,9 @@ export function ServicesPage() {
               <Zap className="size-6" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.avgPrice} {t.currency.symbol}</p>
+              <p className="text-2xl font-bold">
+                {stats.avgPrice} {t.currency.symbol}
+              </p>
               <p className="text-sm text-muted-foreground">متوسط السعر</p>
             </div>
           </CardContent>
@@ -542,13 +593,26 @@ export function ServicesPage() {
       </div>
 
       {/* Services Grid */}
-      {filteredServices.length === 0 ? (
+      {isFetching ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="mt-4 text-sm text-muted-foreground">
+              {t.messages.loading}
+            </p>
+          </CardContent>
+        </Card>
+      ) : filteredServices.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Wrench className="size-12 text-muted-foreground/50" />
-            <p className="mt-4 text-lg font-medium">{t.messages.empty.noData}</p>
+            <p className="mt-4 text-lg font-medium">
+              {t.messages.empty.noData}
+            </p>
             <p className="text-sm text-muted-foreground">
-              {searchQuery ? t.messages.empty.noResults : 'ابدأ بإضافة خدمة جديدة'}
+              {searchQuery
+                ? t.messages.empty.noResults
+                : "ابدأ بإضافة خدمة جديدة"}
             </p>
             {!searchQuery && (
               <Button className="mt-4" onClick={handleAddNew}>
@@ -577,7 +641,9 @@ export function ServicesPage() {
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         title={editingService ? t.services.editService : t.services.addNew}
-        description={editingService ? 'تعديل بيانات الخدمة' : 'إضافة خدمة جديدة للمركز'}
+        description={
+          editingService ? "تعديل بيانات الخدمة" : "إضافة خدمة جديدة للمركز"
+        }
       >
         <ServiceForm
           service={editingService}
@@ -599,5 +665,5 @@ export function ServicesPage() {
         variant="destructive"
       />
     </div>
-  )
+  );
 }

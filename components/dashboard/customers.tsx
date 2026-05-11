@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import type { Customer, Car as CarType, CustomerFormData } from "@/types";
-import { mockCustomers } from "@/lib/mock-data";
+import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -358,7 +358,7 @@ function CustomerRow({ customer, onEdit, onDelete }: CustomerRowProps) {
 
 export function CustomersPage() {
   const { t } = useTranslation();
-  const [customers, setCustomers] = React.useState<Customer[]>(mockCustomers);
+  const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
@@ -369,6 +369,25 @@ export function CustomersPage() {
     Customer | undefined
   >();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isFetching, setIsFetching] = React.useState(true);
+
+  // Fetch customers on mount
+  React.useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      setIsFetching(true);
+      const data = await apiClient.get<Customer[]>("/customers");
+      setCustomers(data);
+    } catch (error) {
+      console.error("Failed to fetch customers:", error);
+      toast.error(t.messages.error.general);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   const filteredCustomers = React.useMemo(() => {
     if (!searchQuery) return customers;
@@ -402,62 +421,45 @@ export function CustomersPage() {
 
   const handleSubmit = async (data: CustomerFormData) => {
     setIsLoading(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    if (editingCustomer) {
-      // Update existing
-      setCustomers((prev) =>
-        prev.map((c) =>
-          c.id === editingCustomer.id
-            ? {
-                ...c,
-                ...data,
-                cars: data.cars.map((car, i) => ({
-                  ...car,
-                  id: editingCustomer.cars[i]?.id || `car-${Date.now()}-${i}`,
-                  customerId: editingCustomer.id,
-                  createdAt: editingCustomer.cars[i]?.createdAt || new Date(),
-                  updatedAt: new Date(),
-                })),
-                updatedAt: new Date(),
-              }
-            : c,
-        ),
-      );
-      toast.success(t.messages.success.updated);
-    } else {
-      // Create new
-      const newCustomer: Customer = {
-        id: `customer-${Date.now()}`,
-        ...data,
-        cars: data.cars.map((car, i) => ({
-          ...car,
-          id: `car-${Date.now()}-${i}`,
-          customerId: `customer-${Date.now()}`,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })),
-        usageCount: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      setCustomers((prev) => [newCustomer, ...prev]);
-      toast.success(t.messages.success.created);
+    try {
+      if (editingCustomer) {
+        // Update existing
+        await apiClient.patch(`/customers/${editingCustomer.id}`, {
+          name: data.name,
+          phone: data.phone,
+        });
+        toast.success(t.messages.success.updated);
+      } else {
+        // Create new
+        await apiClient.post("/customers", {
+          name: data.name,
+          phone: data.phone,
+          cars: data.cars,
+        });
+        toast.success(t.messages.success.created);
+      }
+      await fetchCustomers();
+      setIsFormOpen(false);
+      setEditingCustomer(undefined);
+    } catch (error) {
+      console.error("Failed to save customer:", error);
+      toast.error(t.messages.error.general);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-    setIsFormOpen(false);
-    setEditingCustomer(undefined);
   };
 
   const handleConfirmDelete = async () => {
     if (!deletingCustomer) return;
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    setCustomers((prev) => prev.filter((c) => c.id !== deletingCustomer.id));
-    toast.success(t.messages.success.deleted);
-    setDeletingCustomer(undefined);
+    try {
+      await apiClient.delete(`/customers/${deletingCustomer.id}`);
+      toast.success(t.messages.success.deleted);
+      await fetchCustomers();
+      setDeletingCustomer(undefined);
+    } catch (error) {
+      console.error("Failed to delete customer:", error);
+      toast.error(t.messages.error.general);
+    }
   };
 
   return (
@@ -531,7 +533,14 @@ export function CustomersPage() {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {filteredCustomers.length === 0 ? (
+          {isFetching ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="mt-4 text-sm text-muted-foreground">
+                {t.messages.loading}
+              </p>
+            </div>
+          ) : filteredCustomers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <User className="size-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg font-medium">

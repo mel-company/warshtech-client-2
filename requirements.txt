@@ -1,0 +1,279 @@
+# X-ERP Server Requirements
+
+## Overview
+
+Base URL: http://localhost:3001/api
+Tenant Header: x-tenant-id (required for all tenant-scoped endpoints)
+
+---
+
+## Authentication Endpoints
+
+### 1. Send OTP
+POST /auth/otp/send
+Headers: x-tenant-id (optional)
+Body: { phone: string }
+Response: { success: boolean }
+
+### 2. Verify OTP
+POST /auth/otp/verify
+Headers: x-tenant-id (optional)
+Body: { phone: string, code: string }
+Response: {
+  accessToken: string,
+  refreshToken: string,
+  tenant: { id, name, subdomain },
+  user: { id, name, phone, position, roleId, isActive }
+}
+
+### 3. Login
+POST /auth/login
+Body: { phone: string, password: string, tenantId: string }
+Response: {
+  accessToken: string,
+  refreshToken: string,
+  tenant: { id, name, subdomain },
+  user: { id, name, phone, position, roleId, isActive }
+}
+
+### 4. Register (Tenant + User)
+POST /auth/register
+Body: {
+  tenantName: string,
+  subdomain: string,
+  userName: string,
+  phone: string,
+  password: string
+}
+Response: { success: boolean }
+
+### 5. Refresh Token
+POST /auth/refresh
+Body: { refreshToken: string }
+Response: { accessToken: string, refreshToken: string }
+
+### 6. Logout
+POST /auth/logout
+Headers: Authorization: Bearer <token>
+Response: { success: boolean }
+
+---
+
+## Customer Endpoints
+
+GET    /customers        - List customers
+GET    /customers/:id    - Get customer
+POST   /customers        - Create customer { name, phone, cars[] }
+PUT    /customers/:id    - Update customer { name?, phone? }
+DELETE /customers/:id    - Delete customer
+POST   /customers/:id/cars    - Add car { name, number, model, color }
+PUT    /customers/:id/cars/:carId - Update car
+DELETE /customers/:id/cars/:carId - Delete car
+
+All require x-tenant-id header.
+
+---
+
+## Product Endpoints
+
+GET    /products        - List products
+GET    /products/:id    - Get product
+POST   /products        - Create product
+PUT    /products/:id    - Update product
+DELETE /products/:id    - Delete product
+PATCH  /products/:id/stock - Update stock { stock }
+
+Product body: {
+  name, minPrice, costPrice, salePrice,
+  photos[], unit (piece|liter|kilogram|meter|box|set),
+  stock, minStock, barcode?, description?, categoryId?
+}
+
+All require x-tenant-id header.
+
+---
+
+## Service Endpoints
+
+GET    /services        - List services
+GET    /services/:id    - Get service
+POST   /services        - Create service
+PUT    /services/:id    - Update service
+DELETE /services/:id    - Delete service
+PATCH  /services/:id/toggle - Toggle active
+
+Service body: {
+  name, price, icon?, photo?, description?, estimatedDuration?
+}
+
+All require x-tenant-id header.
+
+---
+
+## Employee Endpoints
+
+GET    /employees        - List employees
+GET    /employees/:id    - Get employee
+POST   /employees        - Create employee
+PUT    /employees/:id    - Update employee
+DELETE /employees/:id    - Delete employee
+PATCH  /employees/:id/toggle - Toggle active
+
+Employee body: {
+  name, position (manager|technician|receptionist|accountant|cleaner),
+  phone, salary, photo?, hireDate?
+}
+
+All require x-tenant-id header.
+
+---
+
+## Dashboard Endpoint
+
+GET /dashboard
+Headers: x-tenant-id required
+Response: {
+  totalCustomers, totalCars, totalProducts, totalServices, totalEmployees,
+  lowStockProducts[],
+  recentCustomers[]
+}
+
+---
+
+## Data Types
+
+Customer: { id, name, phone, cars[], usageCount, createdAt, updatedAt }
+Car: { id, name, number, model, color, customerId, usageCount?, createdAt, updatedAt }
+Product: { id, name, minPrice, costPrice, salePrice, photos[], unit, stock, minStock, barcode?, description? }
+Service: { id, name, price, icon?, photo?, description?, estimatedDuration?, isActive }
+Employee: { id, name, position, phone, salary, photo?, hireDate, isActive }
+AuthUser: { id, name, phone, position?, roleId?, isActive }
+TenantInfo: { id, name, subdomain }
+
+---
+
+## Database Schema (PostgreSQL + Prisma)
+
+### Tenant
+id        String   @id @default(cuid())
+name      String
+subdomain String   @unique
+plan      Plan     @default(BASIC)
+status    Status   @default(ACTIVE)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+
+Relations: customers[], cars[], products[], services[], employees[], users[], roles[]
+
+### Customer
+id        String   @id @default(cuid())
+tenantId  String
+name      String
+phone     String
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+@@unique([tenantId, phone])
+@@index([tenantId])
+
+Relations: tenant(Tenant), cars(Car[])
+
+### Car
+id         String   @id @default(cuid())
+tenantId   String
+customerId String
+name       String
+number     String
+model      String
+color      String
+usageCount Int      @default(0)
+createdAt  DateTime @default(now())
+updatedAt  DateTime @updatedAt
+@@index([tenantId, customerId])
+
+Relations: tenant(Tenant), customer(Customer)
+
+### Product
+id        String   @id @default(cuid())
+tenantId  String
+name      String
+minPrice  Decimal  @db.Decimal(10, 2)
+costPrice Decimal  @db.Decimal(10, 2)
+salePrice Decimal  @db.Decimal(10, 2)
+photos    String[]
+unit      String
+stock     Int      @default(0)
+minStock  Int      @default(5)
+barcode   String?
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+@@index([tenantId])
+
+Relations: tenant(Tenant)
+
+### Service
+id        String   @id @default(cuid())
+tenantId  String
+name      String
+price     Decimal  @db.Decimal(10, 2)
+icon      String?
+photo     String?
+description String?
+estimatedDuration Int?
+isActive  Boolean  @default(true)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+@@index([tenantId])
+
+Relations: tenant(Tenant)
+
+### Employee
+id        String   @id @default(cuid())
+tenantId  String
+name      String
+position  String
+phone     String
+salary    Decimal  @db.Decimal(10, 2)
+photo     String?
+hireDate  DateTime @default(now())
+isActive  Boolean  @default(true)
+createdAt DateTime @default(now())
+updatedAt DateTime @updatedAt
+@@index([tenantId])
+
+Relations: tenant(Tenant)
+
+### User
+id           String    @id @default(cuid())
+tenantId     String
+name         String
+phone        String
+passwordHash String
+position     String?
+roleId       String?
+isActive     Boolean   @default(true)
+lastLogin    DateTime?
+createdAt    DateTime  @default(now())
+updatedAt    DateTime  @updatedAt
+@@unique([tenantId, phone])
+@@index([tenantId])
+
+Relations: tenant(Tenant), role(Role?)
+
+### Role
+id          String       @id @default(cuid())
+tenantId    String
+name        String
+permissions Permission[]
+createdAt   DateTime     @default(now())
+updatedAt   DateTime     @updatedAt
+
+Relations: tenant(Tenant), users(User[])
+
+### Permission (enum)
+READ, WRITE
+
+### Plan (enum)
+BASIC, STANDARD, PREMIUM
+
+### Status (enum)
+ACTIVE, SUSPENDED, CANCELLED

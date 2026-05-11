@@ -42,10 +42,15 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
     tenantId,
   } = options;
 
+  // Get token from localStorage
+  const accessToken =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+
   const config: RequestInit = {
     method,
     headers: {
       "Content-Type": "application/json",
+      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
       ...headers,
     },
     credentials: credentials ? "include" : undefined,

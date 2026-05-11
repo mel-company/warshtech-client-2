@@ -153,7 +153,8 @@ export interface AuthUser {
   name: string
   phone: string
   position: UserPosition
-  permissions: Permission[]
+  role?: string
+  permissions: string[]
 }
 
 export interface OTPRequest {

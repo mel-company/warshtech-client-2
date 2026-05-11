@@ -1,16 +1,40 @@
 "use client";
 
 import * as React from "react";
-import type { AuthUser, AuthState, Permission } from "@/types";
-import apiClient from "@/lib/api";
+import type { AuthUser, AuthState } from "@/types";
+import { apiClient } from "@/lib/api";
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  subdomain: string;
+}
 
 type AuthContextType = AuthState & {
   sendOTP: (phone: string) => Promise<boolean>;
   verifyOTP: (phone: string, code: string) => Promise<boolean>;
+  login: (
+    phone: string,
+    password: string,
+    tenantId: string,
+  ) => Promise<boolean>;
+  register: (
+    data: RegisterData,
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   hasPermission: (resource: string, level: "read" | "write") => boolean;
   pendingPhone: string | null;
+  tenant: TenantInfo | null;
+  setTenant: (tenant: TenantInfo) => void;
 };
+
+export interface RegisterData {
+  tenantName: string;
+  subdomain: string;
+  userName: string;
+  phone: string;
+  password: string;
+}
 
 const AuthContext = React.createContext<AuthContextType | null>(null);
 
@@ -21,13 +45,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading: true,
   });
   const [pendingPhone, setPendingPhone] = React.useState<string | null>(null);
+  const [tenant, setTenantState] = React.useState<TenantInfo | null>(null);
 
   // Check for existing session on mount
   React.useEffect(() => {
-    const stored = localStorage.getItem("auth_user");
-    if (stored) {
+    const storedUser = localStorage.getItem("auth_user");
+    const storedTenant = localStorage.getItem("auth_tenant");
+    const accessToken = localStorage.getItem("access_token");
+
+    if (storedUser && accessToken) {
       try {
-        const user = JSON.parse(stored) as AuthUser;
+        const user = JSON.parse(storedUser) as AuthUser;
+        const tenant = storedTenant
+          ? (JSON.parse(storedTenant) as TenantInfo)
+          : null;
+        if (tenant) setTenantState(tenant);
         setState({ user, isAuthenticated: true, isLoading: false });
       } catch {
         setState({ user: null, isAuthenticated: false, isLoading: false });
@@ -37,28 +69,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const sendOTP = React.useCallback(async (phone: string): Promise<boolean> => {
-    try {
-      await apiClient.post("/auth/otp/send", { phone });
-      setPendingPhone(phone);
-      return true;
-    } catch (error) {
-      console.error("OTP send failed:", error);
-      return false;
-    }
-  }, []);
+  const sendOTP = React.useCallback(
+    async (phone: string): Promise<boolean> => {
+      try {
+        await apiClient.post(
+          "/auth/otp/send",
+          { phone },
+          { tenantId: tenant?.id },
+        );
+        setPendingPhone(phone);
+        return true;
+      } catch (error) {
+        console.error("OTP send failed:", error);
+        return false;
+      }
+    },
+    [tenant],
+  );
+
+  const login = React.useCallback(
+    async (
+      phone: string,
+      password: string,
+      tenantId: string,
+    ): Promise<boolean> => {
+      try {
+        const response = await apiClient.post<{
+          accessToken: string;
+          refreshToken: string;
+          tenant: TenantInfo;
+          user: AuthUser;
+        }>("/auth/login", { phone, password, tenantId });
+        localStorage.setItem("auth_user", JSON.stringify(response.user));
+        localStorage.setItem("access_token", response.accessToken);
+        localStorage.setItem("refresh_token", response.refreshToken);
+        localStorage.setItem("auth_tenant", JSON.stringify(response.tenant));
+        setTenantState(response.tenant);
+        setState({
+          user: response.user,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+        return true;
+      } catch (error) {
+        console.error("Login failed:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
+  const register = React.useCallback(
+    async (
+      data: RegisterData,
+    ): Promise<{ success: boolean; error?: string }> => {
+      try {
+        await apiClient.post("/auth/register", data);
+        return { success: true };
+      } catch (error: any) {
+        const message = error?.response?.data?.message || "Registration failed";
+        return {
+          success: false,
+          error: Array.isArray(message) ? message[0] : message,
+        };
+      }
+    },
+    [],
+  );
 
   const verifyOTP = React.useCallback(
     async (phone: string, code: string): Promise<boolean> => {
       try {
         const response = await apiClient.post<{
-          user: AuthUser;
           accessToken: string;
           refreshToken: string;
-        }>("/auth/otp/verify", { phone, code });
+          tenant: TenantInfo;
+          user: AuthUser;
+        }>("/auth/otp/verify", { phone, code }, { tenantId: tenant?.id });
         localStorage.setItem("auth_user", JSON.stringify(response.user));
         localStorage.setItem("access_token", response.accessToken);
         localStorage.setItem("refresh_token", response.refreshToken);
+        localStorage.setItem("auth_tenant", JSON.stringify(response.tenant));
+        setTenantState(response.tenant);
         setState({
           user: response.user,
           isAuthenticated: true,
@@ -71,27 +163,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [],
+    [tenant],
   );
 
   const logout = React.useCallback(() => {
     localStorage.removeItem("auth_user");
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("auth_tenant");
     setState({ user: null, isAuthenticated: false, isLoading: false });
     setPendingPhone(null);
+    setTenantState(null);
+  }, []);
+
+  const setTenant = React.useCallback((newTenant: TenantInfo) => {
+    setTenantState(newTenant);
+    localStorage.setItem("auth_tenant", JSON.stringify(newTenant));
   }, []);
 
   const hasPermission = React.useCallback(
     (resource: string, level: "read" | "write"): boolean => {
       if (!state.user) return false;
-      const permission = state.user.permissions.find(
-        (p) => p.resource === resource,
-      );
-      if (!permission) return false;
-      if (level === "read")
-        return permission.level === "read" || permission.level === "write";
-      return permission.level === "write";
+      const resourceUpper = resource.toUpperCase();
+      const readPerm = `${resourceUpper}_READ`;
+      const writePerm = `${resourceUpper}_WRITE`;
+
+      if (level === "read") {
+        return (
+          state.user.permissions.includes(readPerm) ||
+          state.user.permissions.includes(writePerm)
+        );
+      }
+      return state.user.permissions.includes(writePerm);
     },
     [state.user],
   );
@@ -101,11 +204,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ...state,
       sendOTP,
       verifyOTP,
+      login,
+      register,
       logout,
       hasPermission,
       pendingPhone,
+      tenant,
+      setTenant,
     }),
-    [state, sendOTP, verifyOTP, logout, hasPermission, pendingPhone],
+    [
+      state,
+      sendOTP,
+      verifyOTP,
+      login,
+      register,
+      logout,
+      hasPermission,
+      pendingPhone,
+      tenant,
+      setTenant,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
