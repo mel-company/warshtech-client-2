@@ -160,6 +160,8 @@ export const apiClient = {
     withErrorHandling(api<T>(endpoint, { ...options, method: "POST", body })),
   put: <T>(endpoint: string, body: unknown, options?: ApiOptions) =>
     withErrorHandling(api<T>(endpoint, { ...options, method: "PUT", body })),
+  patch: <T>(endpoint: string, body: unknown, options?: ApiOptions) =>
+    withErrorHandling(api<T>(endpoint, { ...options, method: "PATCH", body })),
   delete: <T>(endpoint: string, options?: ApiOptions) =>
     withErrorHandling(api<T>(endpoint, { ...options, method: "DELETE" })),
 };
