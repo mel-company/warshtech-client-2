@@ -1,16 +1,10 @@
 import type { Metadata, Viewport } from 'next'
-import { Cairo, Geist_Mono } from 'next/font/google'
+import { Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const cairo = Cairo({ 
-  subsets: ['arabic', 'latin'],
-  variable: '--font-cairo',
-  display: 'swap',
-})
-
-const geistMono = Geist_Mono({ 
+const geistMono = Geist_Mono({
   subsets: ['latin'],
   variable: '--font-geist-mono',
 })
@@ -60,7 +54,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning className="bg-background">
-      <body className={`${cairo.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${geistMono.variable} font-sans antialiased`}>
         <Providers>
           {children}
         </Providers>

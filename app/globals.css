@@ -1,6 +1,80 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
+/* FormaDJRArabic - Text (body) */
+@font-face {
+  font-family: 'FormaDJRArabic';
+  src: url('/fonts/primary/FormaDJRArabicText-ExtraLight-Testing.otf') format('opentype');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabic';
+  src: url('/fonts/primary/FormaDJRArabicText-Light-Testing.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabic';
+  src: url('/fonts/primary/FormaDJRArabicText-Regular-Testing.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabic';
+  src: url('/fonts/primary/FormaDJRArabicText-Medium-Testing.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabic';
+  src: url('/fonts/primary/FormaDJRArabicText-Bold-Testing.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* FormaDJRArabic - Display (headings) */
+@font-face {
+  font-family: 'FormaDJRArabicDisplay';
+  src: url('/fonts/primary/FormaDJRArabicDisplay-Light-Testing.otf') format('opentype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabicDisplay';
+  src: url('/fonts/primary/FormaDJRArabicDisplay-Regular-Testing.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabicDisplay';
+  src: url('/fonts/primary/FormaDJRArabicDisplay-Medium-Testing.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FormaDJRArabicDisplay';
+  src: url('/fonts/primary/FormaDJRArabicDisplay-Bold-Testing.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -11,8 +85,8 @@
   --card-foreground: oklch(0.145 0.015 250);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0.015 250);
-  --primary: oklch(0.55 0.18 250);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #b9e500;
+  --primary-foreground: oklch(0.145 0.015 250);
   --secondary: oklch(0.96 0.01 250);
   --secondary-foreground: oklch(0.25 0.02 250);
   --muted: oklch(0.96 0.01 250);
@@ -51,7 +125,7 @@
   --card-foreground: oklch(0.95 0.005 250);
   --popover: oklch(0.16 0.015 250);
   --popover-foreground: oklch(0.95 0.005 250);
-  --primary: oklch(0.65 0.18 250);
+  --primary: #ccee33;
   --primary-foreground: oklch(0.12 0 0);
   --secondary: oklch(0.22 0.015 250);
   --secondary-foreground: oklch(0.95 0.005 250);
@@ -84,7 +158,8 @@
 }
 
 @theme inline {
-  --font-sans: 'Cairo', 'Geist', 'Geist Fallback', system-ui, sans-serif;
+  --font-sans: 'FormaDJRArabic', system-ui, sans-serif;
+  --font-display: 'FormaDJRArabicDisplay', 'FormaDJRArabic', system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback', monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);

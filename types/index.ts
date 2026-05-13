@@ -32,12 +32,12 @@ export interface Customer {
 // Product / Stock Types
 // -----------------------------------------------------------------------------
 
-export type ProductUnit = 
-  | 'piece' 
-  | 'liter' 
-  | 'kilogram' 
-  | 'meter' 
-  | 'box' 
+export type ProductUnit =
+  | 'piece'
+  | 'liter'
+  | 'kilogram'
+  | 'meter'
+  | 'box'
   | 'set'
 
 export interface Product {
@@ -84,11 +84,11 @@ export interface Service {
 // Employee Types
 // -----------------------------------------------------------------------------
 
-export type EmployeePosition = 
-  | 'manager' 
-  | 'technician' 
-  | 'receptionist' 
-  | 'accountant' 
+export type EmployeePosition =
+  | 'manager'
+  | 'technician'
+  | 'receptionist'
+  | 'accountant'
   | 'cleaner'
 
 export interface Employee {
@@ -108,12 +108,12 @@ export interface Employee {
 // User & Permission Types
 // -----------------------------------------------------------------------------
 
-export type ResourceType = 
-  | 'customers' 
-  | 'products' 
-  | 'services' 
-  | 'employees' 
-  | 'users' 
+export type ResourceType =
+  | 'customers'
+  | 'products'
+  | 'services'
+  | 'employees'
+  | 'users'
   | 'reports'
 
 export type PermissionLevel = 'none' | 'read' | 'write'
@@ -195,6 +195,8 @@ export interface CustomerFormData {
   phone: string
   cars: Omit<Car, 'id' | 'customerId' | 'createdAt' | 'updatedAt'>[]
 }
+
+export interface ProductFormData {
   name: string
   minPrice: number
   costPrice: number

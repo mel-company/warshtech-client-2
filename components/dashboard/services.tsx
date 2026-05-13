@@ -198,7 +198,7 @@ function ServiceForm({
               id="price"
               type="number"
               min={0}
-              step={0.01}
+              step={1000}
               value={formData.price}
               onChange={(e) =>
                 handleChange("price", parseFloat(e.target.value) || 0)

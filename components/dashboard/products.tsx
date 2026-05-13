@@ -31,21 +31,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
 
 // =============================================================================
@@ -83,7 +76,7 @@ function ProductForm({
     field: keyof ProductFormData,
     value: string | number | ProductUnit,
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -153,7 +146,7 @@ function ProductForm({
             id="costPrice"
             type="number"
             min={0}
-            step={0.01}
+            step={1000}
             value={formData.costPrice}
             onChange={(e) =>
               handleChange("costPrice", parseFloat(e.target.value) || 0)
@@ -166,7 +159,7 @@ function ProductForm({
             id="minPrice"
             type="number"
             min={0}
-            step={0.01}
+            step={1000}
             value={formData.minPrice}
             onChange={(e) =>
               handleChange("minPrice", parseFloat(e.target.value) || 0)
@@ -179,7 +172,7 @@ function ProductForm({
             id="salePrice"
             type="number"
             min={0}
-            step={0.01}
+            step={1000}
             value={formData.salePrice}
             onChange={(e) =>
               handleChange("salePrice", parseFloat(e.target.value) || 0)
