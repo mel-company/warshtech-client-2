@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { AuthUser, AuthState } from "@/types";
 import { apiClient, setTenantId, clearTenantId } from "@/lib/api";
+import { cleanCredentialsAndRedirect } from "@/lib/auth-utils";
 
 export interface TenantInfo {
   id: string;
@@ -75,33 +76,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Refresh token every 10 minutes
-  React.useEffect(() => {
-    const refreshToken = localStorage.getItem("refresh_token");
-    if (!refreshToken) return;
-
-    const refreshAccessToken = async () => {
-      try {
-        const response = await apiClient.post<{
-          accessToken: string;
-          refreshToken: string;
-        }>("/auth/refresh", { refreshToken });
-
-        localStorage.setItem("access_token", response.accessToken);
-        localStorage.setItem("refresh_token", response.refreshToken);
-      } catch (error) {
-        console.error("Token refresh failed:", error);
-        // If refresh fails, logout user
-        logout();
-      }
-    };
-
-    // Refresh immediately, then every 10 minutes
-    refreshAccessToken();
-    const interval = setInterval(refreshAccessToken, 10 * 60 * 1000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   const sendOTP = React.useCallback(
     async (phone: string): Promise<boolean> => {
@@ -205,12 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const logout = React.useCallback(() => {
-    localStorage.removeItem("auth_user");
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("auth_tenant");
-    localStorage.removeItem("tenant_id");
-    clearTenantId();
+    cleanCredentialsAndRedirect();
     setState({ user: null, isAuthenticated: false, isLoading: false });
     setPendingPhone(null);
     setTenantState(null);

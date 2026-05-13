@@ -1,4 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+import { cleanCredentialsAndRedirect, isTokenRefreshError } from "./auth-utils";
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -58,50 +59,109 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
   const accessToken =
     typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
-  const config: RequestInit = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-      ...headers,
-    },
-    credentials: credentials ? "include" : undefined,
+  const makeRequest = async (token: string | null): Promise<Response> => {
+    const config: RequestInit = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...headers,
+      },
+      credentials: credentials ? "include" : undefined,
+    };
+
+    // Add tenant header if provided or if we have a current tenant
+    const effectiveTenantId = tenantId || getTenantId();
+    if (effectiveTenantId) {
+      config.headers = {
+        ...config.headers,
+        "x-tenant-id": effectiveTenantId,
+      };
+    }
+
+    if (body) {
+      config.body = JSON.stringify(body);
+    }
+
+    return fetch(`${API_URL}${endpoint}`, config);
   };
 
-  // Add tenant header if provided or if we have a current tenant
-  const effectiveTenantId = tenantId || getTenantId();
-  if (effectiveTenantId) {
-    config.headers = {
-      ...config.headers,
-      "x-tenant-id": effectiveTenantId,
-    };
-  }
+  let response = await makeRequest(accessToken);
 
-  if (body) {
-    config.body = JSON.stringify(body);
-  }
+  // If we get a 401, try to refresh the token
+  if (response.status === 401 && accessToken) {
+    const refreshToken =
+      typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
 
-  const response = await fetch(`${API_URL}${endpoint}`, config);
+    if (refreshToken) {
+      try {
+        const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (refreshResponse.ok) {
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await refreshResponse.json();
+
+          // Update tokens in localStorage
+          if (typeof window !== "undefined") {
+            localStorage.setItem("access_token", newAccessToken);
+            localStorage.setItem("refresh_token", newRefreshToken);
+          }
+
+          // Retry the original request with the new token
+          response = await makeRequest(newAccessToken);
+        } else {
+          // Refresh failed, clean up and redirect
+          throw new Error("TOKEN_REFRESH_FAILED");
+        }
+      } catch (error) {
+        // Refresh failed, clean up and redirect
+        throw new Error("TOKEN_REFRESH_FAILED");
+      }
+    } else {
+      // No refresh token, clean up and redirect
+      throw new Error("TOKEN_REFRESH_FAILED");
+    }
+  }
 
   if (!response.ok) {
     const error = await response
       .json()
       .catch(() => ({ message: "Request failed" }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const errorMessage = error.message || `HTTP ${response.status}`;
+    throw new Error(errorMessage);
   }
 
   return response.json();
 }
 
+// Wrapper functions that handle token refresh failures
+const withErrorHandling = async <T>(apiCall: Promise<T>): Promise<T> => {
+  try {
+    return await apiCall;
+  } catch (error: any) {
+    if (isTokenRefreshError(error)) {
+      cleanCredentialsAndRedirect();
+      // This will redirect, so we don't need to return anything
+      throw error;
+    }
+    throw error;
+  }
+};
+
 export const apiClient = {
   get: <T>(endpoint: string, options?: ApiOptions) =>
-    api<T>(endpoint, { ...options, method: "GET" }),
+    withErrorHandling(api<T>(endpoint, { ...options, method: "GET" })),
   post: <T>(endpoint: string, body: unknown, options?: ApiOptions) =>
-    api<T>(endpoint, { ...options, method: "POST", body }),
+    withErrorHandling(api<T>(endpoint, { ...options, method: "POST", body })),
   put: <T>(endpoint: string, body: unknown, options?: ApiOptions) =>
-    api<T>(endpoint, { ...options, method: "PUT", body }),
+    withErrorHandling(api<T>(endpoint, { ...options, method: "PUT", body })),
   delete: <T>(endpoint: string, options?: ApiOptions) =>
-    api<T>(endpoint, { ...options, method: "DELETE" }),
+    withErrorHandling(api<T>(endpoint, { ...options, method: "DELETE" })),
 };
 
 export default apiClient;
