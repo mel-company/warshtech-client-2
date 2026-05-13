@@ -10,7 +10,7 @@ export function cleanCredentialsAndRedirect() {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("auth_tenant");
     localStorage.removeItem("tenant_id");
-    
+
     // Redirect to auth page
     window.location.href = "/auth";
   }

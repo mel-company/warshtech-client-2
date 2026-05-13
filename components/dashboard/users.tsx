@@ -27,15 +27,15 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
-import apiClient from "@/lib/api";
+import { useAuth } from "@/lib/auth";
 import type {
   User,
   UserPosition,
   UserFormData,
   Role,
-  ResourceType,
-  PermissionLevel,
+  Permission,
 } from "@/types";
+import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,13 +83,35 @@ interface PermissionGridProps {
   readonly?: boolean;
 }
 
+type ResourceType =
+  | "customers"
+  | "products"
+  | "services"
+  | "employees"
+  | "users"
+  | "settings";
+
+type PermissionLevel = "none" | "read" | "write";
+
 const resourceIcons: Record<ResourceType, React.ElementType> = {
   customers: Users,
   products: Package,
   services: Wrench,
   employees: UserCog,
   users: Shield,
-  reports: FileText,
+  settings: FileText,
+};
+
+const resourcePermissionMap: Record<
+  ResourceType,
+  { read: Permission; write: Permission }
+> = {
+  customers: { read: "CUSTOMERS_READ", write: "CUSTOMERS_WRITE" },
+  products: { read: "PRODUCTS_READ", write: "PRODUCTS_WRITE" },
+  services: { read: "SERVICES_READ", write: "SERVICES_WRITE" },
+  employees: { read: "EMPLOYEES_READ", write: "EMPLOYEES_WRITE" },
+  users: { read: "USERS_READ", write: "USERS_WRITE" },
+  settings: { read: "SETTINGS_READ", write: "SETTINGS_WRITE" },
 };
 
 function PermissionGrid({
@@ -104,19 +126,28 @@ function PermissionGrid({
     "services",
     "employees",
     "users",
-    "reports",
+    "settings",
   ];
   const levels: PermissionLevel[] = ["none", "read", "write"];
 
   const getPermissionLevel = (resource: ResourceType): PermissionLevel => {
-    const perm = permissions.find((p) => p.resource === resource);
-    return perm?.level || "none";
+    const perms = resourcePermissionMap[resource];
+    if (permissions.includes(perms.write)) return "write";
+    if (permissions.includes(perms.read)) return "read";
+    return "none";
   };
 
   const handleChange = (resource: ResourceType, level: PermissionLevel) => {
     if (readonly) return;
-    const newPermissions = permissions.filter((p) => p.resource !== resource);
-    newPermissions.push({ resource, level });
+    const perms = resourcePermissionMap[resource];
+    const newPermissions = permissions.filter(
+      (p) => p !== perms.read && p !== perms.write,
+    );
+    if (level === "read") newPermissions.push(perms.read);
+    if (level === "write") {
+      newPermissions.push(perms.read);
+      newPermissions.push(perms.write);
+    }
     onChange(newPermissions);
   };
 
@@ -191,6 +222,7 @@ interface UserFormProps {
 function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = React.useState(false);
+  const [roles, setRoles] = React.useState<Role[]>([]);
   const [formData, setFormData] = React.useState<UserFormData>({
     name: user?.name || "",
     phone: user?.phone || "",
@@ -199,6 +231,19 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
     roleId: user?.roleId || null,
     isActive: user?.isActive ?? true,
   });
+
+  React.useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const data = await apiClient.get<Role[]>("/roles");
+        setRoles(data || []);
+      } catch (error) {
+        console.error("Failed to fetch roles:", error);
+        setRoles([]);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   const handleChange = (
     field: keyof UserFormData,
@@ -298,6 +343,28 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
               {positions.map((position) => (
                 <SelectItem key={position} value={position}>
                   {t.users.positions[position]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="role">{t.users.roles}</Label>
+          <Select
+            value={formData.roleId || "none"}
+            onValueChange={(value) =>
+              handleChange("roleId", value === "none" ? null : value)
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="اختر الدور (اختياري)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">بدون دور</SelectItem>
+              {roles.filter((role) => role.name !== 'Owner').map((role) => (
+                <SelectItem key={role.id} value={role.id}>
+                  {role.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -429,43 +496,49 @@ function UserRow({
         </Badge>
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8">
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(user)}>
-              <Pencil className="ml-2 size-4" />
-              {t.actions.edit}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onViewPermissions(user)}>
-              <Lock className="ml-2 size-4" />
-              الصلاحيات
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onToggleActive(user)}>
-              {user.isActive ? (
-                <>
-                  <XCircle className="ml-2 size-4" />
-                  تعطيل
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="ml-2 size-4" />
-                  تفعيل
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => onDelete(user)}
-            >
-              <Trash2 className="ml-2 size-4" />
-              {t.actions.delete}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {user.role?.name === 'Owner' ? (
+          <Badge variant="secondary" className="text-xs">
+            Owner
+          </Badge>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(user)}>
+                <Pencil className="ml-2 size-4" />
+                {t.actions.edit}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onViewPermissions(user)}>
+                <Lock className="ml-2 size-4" />
+                الصلاحيات
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleActive(user)}>
+                {user.isActive ? (
+                  <>
+                    <XCircle className="ml-2 size-4" />
+                    تعطيل
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="ml-2 size-4" />
+                    تفعيل
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(user)}
+              >
+                <Trash2 className="ml-2 size-4" />
+                {t.actions.delete}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -477,6 +550,7 @@ function UserRow({
 
 export function UsersPage() {
   const { t } = useTranslation();
+  const { user: currentUser, hasPermission } = useAuth();
   const [users, setUsers] = React.useState<User[]>([]);
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -490,9 +564,11 @@ export function UsersPage() {
   const [deletingUser, setDeletingUser] = React.useState<User | undefined>();
   const [viewingUser, setViewingUser] = React.useState<User | undefined>();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isFetching, setIsFetching] = React.useState(true);
 
   const fetchUsers = React.useCallback(async () => {
     try {
+      setIsFetching(true);
       const data = await apiClient.get<{ data: User[]; total: number }>(
         "/users",
       );
@@ -500,17 +576,24 @@ export function UsersPage() {
     } catch (error) {
       console.error("Failed to fetch users:", error);
       toast.error(t.messages.error.fetchFailed);
+    } finally {
+      setIsFetching(false);
     }
   }, [t]);
 
   const fetchRoles = React.useCallback(async () => {
+    // Only fetch roles if user has permission
+    if (!hasPermission("roles", "read")) {
+      return;
+    }
     try {
-      const data = await apiClient.get<{ data: Role[] }>("/roles");
-      setRoles(data.data);
+      const data = await apiClient.get<Role[]>("/roles");
+      setRoles(data || []);
     } catch (error) {
       console.error("Failed to fetch roles:", error);
+      // Don't show toast for permission errors
     }
-  }, []);
+  }, [hasPermission]);
 
   React.useEffect(() => {
     fetchUsers();
@@ -704,7 +787,14 @@ export function UsersPage() {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {filteredUsers.length === 0 ? (
+          {isFetching ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="mt-4 text-sm text-muted-foreground">
+                {t.messages.loading}
+              </p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Shield className="size-12 text-muted-foreground/50" />
               <p className="mt-4 text-lg font-medium">

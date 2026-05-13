@@ -60,6 +60,7 @@ const navItems = [
   { href: '/dashboard/services', icon: Wrench, labelKey: 'services' as const },
   { href: '/dashboard/employees', icon: UserCog, labelKey: 'employees' as const },
   { href: '/dashboard/users', icon: Shield, labelKey: 'users' as const },
+  { href: '/dashboard/roles', icon: Shield, labelKey: 'roles' as const },
 ]
 
 function ThemeToggle() {
@@ -137,22 +138,25 @@ function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive = pathname === item.href || 
+              {navItems.map((item, index) => {
+                const isActive = pathname === item.href ||
                   (item.href !== '/dashboard' && pathname.startsWith(item.href))
                 return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      tooltip={t.nav[item.labelKey]}
-                    >
-                      <Link href={item.href}>
-                        <item.icon className="size-4" />
-                        <span>{t.nav[item.labelKey]}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <React.Fragment key={item.href}>
+                    {index === navItems?.length - 2 && <div className='w-full h-px bg-zinc-200 dark:bg-zinc-800' />}
+                    <SidebarMenuItem >
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        tooltip={t.nav[item.labelKey]}
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="size-4" />
+                          <span>{t.nav[item.labelKey]}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </React.Fragment>
                 )
               })}
             </SidebarMenu>
@@ -223,6 +227,7 @@ function DashboardHeader() {
     if (pathname.includes('/services')) return t.nav.services
     if (pathname.includes('/employees')) return t.nav.employees
     if (pathname.includes('/users')) return t.nav.users
+    if (pathname.includes('/roles')) return t.nav.roles
     if (pathname.includes('/settings')) return t.nav.settings
     return t.nav.dashboard
   }
@@ -232,7 +237,7 @@ function DashboardHeader() {
       <SidebarTrigger className="md:hidden">
         <Menu className="size-5" />
       </SidebarTrigger>
-      
+
       <div className="flex flex-1 items-center justify-between">
         <h1 className="text-lg font-semibold">{getPageTitle()}</h1>
         <div className="flex items-center gap-2">

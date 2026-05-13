@@ -193,6 +193,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = React.useCallback(
     (resource: string, level: "read" | "write"): boolean => {
       if (!state.user) return false;
+
+      // Owner users have unlimited access (unchangeable role for workshop creator)
+      if (state.user.role === 'Owner') {
+        return true;
+      }
+
       const resourceUpper = resource.toUpperCase();
       const readPerm = `${resourceUpper}_READ`;
       const writePerm = `${resourceUpper}_WRITE`;

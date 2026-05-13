@@ -108,25 +108,28 @@ export interface Employee {
 // User & Permission Types
 // -----------------------------------------------------------------------------
 
-export type ResourceType =
-  | 'customers'
-  | 'products'
-  | 'services'
-  | 'employees'
-  | 'users'
-  | 'reports'
-
-export type PermissionLevel = 'none' | 'read' | 'write'
-
-export interface Permission {
-  resource: ResourceType
-  level: PermissionLevel
-}
+export type Permission =
+  | 'CUSTOMERS_READ'
+  | 'CUSTOMERS_WRITE'
+  | 'PRODUCTS_READ'
+  | 'PRODUCTS_WRITE'
+  | 'SERVICES_READ'
+  | 'SERVICES_WRITE'
+  | 'EMPLOYEES_READ'
+  | 'EMPLOYEES_WRITE'
+  | 'USERS_READ'
+  | 'USERS_WRITE'
+  | 'ROLES_READ'
+  | 'ROLES_WRITE'
+  | 'SETTINGS_READ'
+  | 'SETTINGS_WRITE'
 
 export interface Role {
   id: string
   name: string
   permissions: Permission[]
+  createdAt: Date
+  updatedAt: Date
 }
 
 export type UserPosition = 'admin' | 'manager' | 'cashier' | 'viewer'
