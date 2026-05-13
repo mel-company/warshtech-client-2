@@ -50,10 +50,10 @@ export function ResponsiveModal({
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className={cn('max-h-[90vh]', className)}>
-          <DrawerHeader className="text-right">
-            <DrawerTitle>{title}</DrawerTitle>
+          <DrawerHeader className="text-right" dir="rtl">
+            <DrawerTitle className="text-right">{title}</DrawerTitle>
             {description && (
-              <DrawerDescription>{description}</DrawerDescription>
+              <DrawerDescription className="text-right">{description}</DrawerDescription>
             )}
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -71,14 +71,14 @@ export function ResponsiveModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
+      <DialogContent
         className={cn('sm:max-w-[500px] max-h-[90vh] flex flex-col', className)}
         showCloseButton={showCloseButton}
       >
-        <DialogHeader className="text-right">
-          <DialogTitle>{title}</DialogTitle>
+        <DialogHeader className="text-right" dir="rtl">
+          <DialogTitle className="text-right">{title}</DialogTitle>
           {description && (
-            <DialogDescription>{description}</DialogDescription>
+            <DialogDescription className="text-right">{description}</DialogDescription>
           )}
         </DialogHeader>
         <ScrollArea className="flex-1 overflow-auto">
@@ -143,9 +143,9 @@ export function ConfirmDialog({
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent>
-          <DrawerHeader className="text-right">
-            <DrawerTitle>{title}</DrawerTitle>
-            <DrawerDescription>{description}</DrawerDescription>
+          <DrawerHeader className="text-right" dir="rtl">
+            <DrawerTitle className="text-right">{title}</DrawerTitle>
+            <DrawerDescription className="text-right">{description}</DrawerDescription>
           </DrawerHeader>
           <DrawerFooter className="flex-row-reverse gap-2">
             {buttons}
@@ -158,9 +158,9 @@ export function ConfirmDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[400px]">
-        <DialogHeader className="text-right">
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+        <DialogHeader className="text-right" dir="rtl">
+          <DialogTitle className="text-right">{title}</DialogTitle>
+          <DialogDescription className="text-right">{description}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex-row-reverse gap-2 sm:flex-row-reverse">
           {buttons}

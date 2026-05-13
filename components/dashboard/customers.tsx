@@ -103,22 +103,23 @@ function CustomerForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 text-right" dir="rtl">
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name">{t.customers.name}</Label>
+          <Label htmlFor="name" className="text-right">{t.customers.name}</Label>
           <Input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="أدخل اسم العميل"
+            className="text-right"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone">{t.customers.phone}</Label>
+          <Label htmlFor="phone" className="text-right">{t.customers.phone}</Label>
           <Input
             id="phone"
             value={phone}
@@ -136,14 +137,14 @@ function CustomerForm({
       {/* Cars Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label className="text-base font-medium">{t.customers.cars}</Label>
+          <Label className="text-base font-medium text-right">{t.customers.cars}</Label>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={handleAddCar}
           >
-            <Plus className="ml-1 size-4" />
+            <Plus className="mr-1 size-4" />
             {t.customers.car.add}
           </Button>
         </div>
@@ -160,50 +161,54 @@ function CustomerForm({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 left-2 size-7 text-muted-foreground hover:text-destructive"
+                  className="absolute top-2 right-2 size-7 text-muted-foreground hover:text-destructive"
                   onClick={() => handleRemoveCar(index)}
                 >
                   <X className="size-4" />
                 </Button>
-                <CardContent className="pt-4 grid gap-4 sm:grid-cols-2">
+                <CardContent className="pt-4 grid gap-4 sm:grid-cols-2 text-right">
                   <div className="space-y-2">
-                    <Label>{t.customers.car.name}</Label>
+                    <Label className="text-right">{t.customers.car.name}</Label>
                     <Input
                       value={car.name}
                       onChange={(e) =>
                         handleCarChange(index, "name", e.target.value)
                       }
                       placeholder="كامري، أكورد..."
+                      className="text-right"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t.customers.car.plateNumber}</Label>
+                    <Label className="text-right">{t.customers.car.plateNumber}</Label>
                     <Input
                       value={car.number}
                       onChange={(e) =>
                         handleCarChange(index, "number", e.target.value)
                       }
                       placeholder="أ ب ج 1234"
+                      className="text-right"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t.customers.car.model}</Label>
+                    <Label className="text-right">{t.customers.car.model}</Label>
                     <Input
                       value={car.model}
                       onChange={(e) =>
                         handleCarChange(index, "model", e.target.value)
                       }
                       placeholder="2024"
+                      className="text-right"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t.customers.car.color}</Label>
+                    <Label className="text-right">{t.customers.car.color}</Label>
                     <Input
                       value={car.color}
                       onChange={(e) =>
                         handleCarChange(index, "color", e.target.value)
                       }
                       placeholder="أبيض، أسود..."
+                      className="text-right"
                     />
                   </div>
                 </CardContent>
@@ -214,7 +219,7 @@ function CustomerForm({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-4">
+      <div className="flex gap-2 pt-4 flex-row-reverse">
         <Button type="submit" className="flex-1" disabled={isLoading}>
           {isLoading ? t.messages.loading : t.actions.save}
         </Button>
@@ -425,11 +430,42 @@ export function CustomersPage() {
     setIsLoading(true);
     try {
       if (editingCustomer) {
-        // Update existing
+        // Update existing customer data
         await apiClient.patch(`/customers/${editingCustomer.id}`, {
           name: data.name,
           phone: data.phone,
         });
+
+        // Handle cars separately - compare and update
+        const existingCars = editingCustomer.cars || [];
+        const updatedCars = data.cars || [];
+
+        // Delete cars that are no longer in the updated list
+        for (const existingCar of existingCars) {
+          const stillExists = updatedCars.some(updatedCar =>
+            updatedCar.number === existingCar.number &&
+            updatedCar.name === existingCar.name
+          );
+          if (!stillExists) {
+            await apiClient.delete(`/customers/${editingCustomer.id}/cars/${existingCar.id}`);
+          }
+        }
+
+        // Add or update cars
+        for (const updatedCar of updatedCars) {
+          const existingCar = existingCars.find(car =>
+            car.number === updatedCar.number &&
+            car.name === updatedCar.name
+          );
+
+          if (existingCar) {
+            // Update existing car
+            await apiClient.put(`/customers/${editingCustomer.id}/cars/${existingCar.id}`, updatedCar);
+          } else {
+            // Add new car
+            await apiClient.post(`/customers/${editingCustomer.id}/cars`, updatedCar);
+          }
+        }
         toast.success(t.messages.success.updated);
       } else {
         // Create new
