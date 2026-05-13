@@ -109,7 +109,7 @@ function ProductForm({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 rtl-auto">
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
@@ -141,8 +141,6 @@ function ProductForm({
             value={formData.barcode}
             onChange={(e) => handleChange("barcode", e.target.value)}
             placeholder="6291001234567"
-            dir="ltr"
-            className="text-left"
           />
         </div>
       </div>
@@ -160,8 +158,6 @@ function ProductForm({
             onChange={(e) =>
               handleChange("costPrice", parseFloat(e.target.value) || 0)
             }
-            dir="ltr"
-            className="text-left"
           />
         </div>
         <div className="space-y-2">
@@ -175,8 +171,6 @@ function ProductForm({
             onChange={(e) =>
               handleChange("minPrice", parseFloat(e.target.value) || 0)
             }
-            dir="ltr"
-            className="text-left"
           />
         </div>
         <div className="space-y-2">
@@ -190,8 +184,6 @@ function ProductForm({
             onChange={(e) =>
               handleChange("salePrice", parseFloat(e.target.value) || 0)
             }
-            dir="ltr"
-            className="text-left"
           />
         </div>
       </div>
@@ -226,8 +218,6 @@ function ProductForm({
             onChange={(e) =>
               handleChange("stock", parseInt(e.target.value) || 0)
             }
-            dir="ltr"
-            className="text-left"
           />
         </div>
         <div className="space-y-2">
@@ -240,8 +230,6 @@ function ProductForm({
             onChange={(e) =>
               handleChange("minStock", parseInt(e.target.value) || 0)
             }
-            dir="ltr"
-            className="text-left"
           />
         </div>
       </div>
@@ -354,7 +342,7 @@ function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
             }
             className={cn(
               stockStatus.variant === "warning" &&
-                "bg-warning/10 text-warning border-warning/20",
+              "bg-warning/10 text-warning border-warning/20",
             )}
           >
             {stockStatus.label}

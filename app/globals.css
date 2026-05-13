@@ -132,9 +132,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply scroll-smooth;
   }
@@ -143,6 +145,315 @@
 /* RTL Support */
 [dir="rtl"] {
   text-align: right;
+}
+
+/* RTL Form and Input Styles */
+[dir="rtl"] input:not([type="tel"]):not([type="number"]):not([dir="ltr"]),
+[dir="rtl"] textarea:not([dir="ltr"]),
+[dir="rtl"] select:not([dir="ltr"]) {
+  text-align: right;
+}
+
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="number"],
+[dir="rtl"] input[dir="ltr"],
+[dir="rtl"] textarea[dir="ltr"] {
+  text-align: left;
+}
+
+/* RTL Label styles */
+[dir="rtl"] label {
+  text-align: right;
+}
+
+/* RTL Modal and Dialog styles */
+[dir="rtl"] .dialog-content,
+[dir="rtl"] .drawer-content {
+  direction: rtl;
+}
+
+[dir="rtl"] .dialog-header,
+[dir="rtl"] .drawer-header {
+  text-align: right;
+  direction: rtl;
+}
+
+[dir="rtl"] .dialog-title,
+[dir="rtl"] .drawer-title {
+  text-align: right;
+}
+
+[dir="rtl"] .dialog-description,
+[dir="rtl"] .drawer-description {
+  text-align: right;
+}
+
+/* RTL Button groups */
+[dir="rtl"] .flex-row {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .justify-end {
+  justify-content: flex-start;
+}
+
+[dir="rtl"] .justify-between {
+  justify-content: space-between;
+}
+
+/* RTL Table styles */
+[dir="rtl"] table {
+  direction: rtl;
+}
+
+[dir="rtl"] th {
+  text-align: right;
+}
+
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* RTL Card and Panel styles */
+[dir="rtl"] .card-content {
+  direction: rtl;
+}
+
+[dir="rtl"] .panel-content {
+  direction: rtl;
+}
+
+/* RTL Form validation messages */
+[dir="rtl"] .error-message {
+  text-align: right;
+}
+
+[dir="rtl"] .success-message {
+  text-align: right;
+}
+
+/* RTL Navigation and Menu styles */
+[dir="rtl"] .nav-menu {
+  direction: rtl;
+}
+
+[dir="rtl"] .dropdown-menu {
+  direction: rtl;
+  text-align: right;
+}
+
+/* RTL Pagination */
+[dir="rtl"] .pagination {
+  direction: rtl;
+}
+
+/* RTL Badge and Tag styles */
+[dir="rtl"] .badge {
+  text-align: right;
+}
+
+/* RTL Alert and Notification styles */
+[dir="rtl"] .alert {
+  text-align: right;
+  direction: rtl;
+}
+
+[dir="rtl"] .notification {
+  text-align: right;
+  direction: rtl;
+}
+
+/* RTL Loading and Spinner styles */
+[dir="rtl"] .loading-text {
+  text-align: right;
+}
+
+/* RTL Utility Classes */
+.rtl-auto {
+  direction: rtl;
+}
+
+.rtl-text {
+  text-align: right;
+}
+
+.rtl-text-left {
+  text-align: left !important;
+}
+
+.rtl-flex-row {
+  flex-direction: row-reverse;
+}
+
+.rtl-flex-col {
+  flex-direction: column;
+}
+
+.rtl-justify-start {
+  justify-content: flex-end;
+}
+
+.rtl-justify-end {
+  justify-content: flex-start;
+}
+
+.rtl-justify-center {
+  justify-content: center;
+}
+
+.rtl-justify-between {
+  justify-content: space-between;
+}
+
+.rtl-items-start {
+  align-items: flex-end;
+}
+
+.rtl-items-end {
+  align-items: flex-start;
+}
+
+.rtl-margin-left {
+  margin-left: 0;
+  margin-right: 1rem;
+}
+
+.rtl-margin-right {
+  margin-right: 0;
+  margin-left: 1rem;
+}
+
+.rtl-padding-left {
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+.rtl-padding-right {
+  padding-right: 0;
+  padding-left: 1rem;
+}
+
+.rtl-border-left {
+  border-left: none;
+  border-right: 1px solid var(--border);
+}
+
+.rtl-border-right {
+  border-right: none;
+  border-left: 1px solid var(--border);
+}
+
+/* RTL Form utilities */
+.rtl-form {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-form-group {
+  direction: rtl;
+}
+
+.rtl-form-label {
+  text-align: right;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.rtl-form-input {
+  text-align: right;
+  direction: rtl;
+}
+
+.rtl-form-input-ltr {
+  text-align: left;
+  direction: ltr;
+}
+
+/* RTL Table utilities */
+.rtl-table {
+  direction: rtl;
+}
+
+.rtl-table th,
+.rtl-table td {
+  text-align: right;
+}
+
+.rtl-table-actions {
+  direction: ltr;
+}
+
+/* RTL Modal utilities */
+.rtl-modal {
+  direction: rtl;
+}
+
+.rtl-modal-header {
+  text-align: right;
+  direction: rtl;
+}
+
+.rtl-modal-content {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-modal-footer {
+  flex-direction: row-reverse;
+}
+
+/* RTL Card utilities */
+.rtl-card {
+  direction: rtl;
+}
+
+.rtl-card-content {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-card-header {
+  text-align: right;
+  direction: rtl;
+}
+
+/* RTL Navigation utilities */
+.rtl-nav {
+  direction: rtl;
+}
+
+.rtl-nav-item {
+  text-align: right;
+}
+
+.rtl-dropdown {
+  direction: rtl;
+  text-align: right;
+}
+
+/* RTL Button utilities */
+.rtl-button-group {
+  flex-direction: row-reverse;
+}
+
+.rtl-button-group>* {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+.rtl-button-group>*:first-child {
+  margin-left: 0;
+}
+
+/* RTL Alert utilities */
+.rtl-alert {
+  direction: rtl;
+  text-align: right;
+}
+
+.rtl-alert-icon {
+  margin-left: 0.5rem;
+  margin-right: 0;
 }
 
 /* Custom scrollbar for RTL */
@@ -195,9 +506,12 @@
 
 /* Animation for loading states */
 @keyframes pulse-soft {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.6;
   }
@@ -213,6 +527,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);

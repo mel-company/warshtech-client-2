@@ -103,30 +103,27 @@ function CustomerForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 text-right" dir="rtl">
+    <form onSubmit={handleSubmit} className="space-y-6 rtl-auto">
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-right">{t.customers.name}</Label>
+          <Label htmlFor="name">{t.customers.name}</Label>
           <Input
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="أدخل اسم العميل"
-            className="text-right"
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="phone" className="text-right">{t.customers.phone}</Label>
+          <Label htmlFor="phone">{t.customers.phone}</Label>
           <Input
             id="phone"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+966500000000"
-            dir="ltr"
-            className="text-left"
             required
           />
         </div>
@@ -137,7 +134,7 @@ function CustomerForm({
       {/* Cars Section */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <Label className="text-base font-medium text-right">{t.customers.cars}</Label>
+          <Label className="text-base font-medium">{t.customers.cars}</Label>
           <Button
             type="button"
             variant="outline"
@@ -161,54 +158,50 @@ function CustomerForm({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 size-7 text-muted-foreground hover:text-destructive"
+                  className="absolute top-2 end-2 size-7 text-muted-foreground hover:text-destructive"
                   onClick={() => handleRemoveCar(index)}
                 >
                   <X className="size-4" />
                 </Button>
-                <CardContent className="pt-4 grid gap-4 sm:grid-cols-2 text-right">
+                <CardContent className="pt-4 grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label className="text-right">{t.customers.car.name}</Label>
+                    <Label>{t.customers.car.name}</Label>
                     <Input
                       value={car.name}
                       onChange={(e) =>
                         handleCarChange(index, "name", e.target.value)
                       }
                       placeholder="كامري، أكورد..."
-                      className="text-right"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-right">{t.customers.car.plateNumber}</Label>
+                    <Label>{t.customers.car.plateNumber}</Label>
                     <Input
                       value={car.number}
                       onChange={(e) =>
                         handleCarChange(index, "number", e.target.value)
                       }
                       placeholder="أ ب ج 1234"
-                      className="text-right"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-right">{t.customers.car.model}</Label>
+                    <Label>{t.customers.car.model}</Label>
                     <Input
                       value={car.model}
                       onChange={(e) =>
                         handleCarChange(index, "model", e.target.value)
                       }
                       placeholder="2024"
-                      className="text-right"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-right">{t.customers.car.color}</Label>
+                    <Label>{t.customers.car.color}</Label>
                     <Input
                       value={car.color}
                       onChange={(e) =>
                         handleCarChange(index, "color", e.target.value)
                       }
                       placeholder="أبيض، أسود..."
-                      className="text-right"
                     />
                   </div>
                 </CardContent>
@@ -219,7 +212,7 @@ function CustomerForm({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-4 flex-row-reverse">
+      <div className="flex gap-2 pt-4">
         <Button type="submit" className="flex-1" disabled={isLoading}>
           {isLoading ? t.messages.loading : t.actions.save}
         </Button>

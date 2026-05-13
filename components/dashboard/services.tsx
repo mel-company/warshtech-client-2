@@ -131,7 +131,7 @@ function ServiceForm({
   const IconComponent = iconMap[formData.icon || "Wrench"] || Wrench;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 rtl-auto">
       {/* Icon Preview */}
       <div className="flex justify-center">
         <div className="flex size-20 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -203,10 +203,9 @@ function ServiceForm({
               onChange={(e) =>
                 handleChange("price", parseFloat(e.target.value) || 0)
               }
-              dir="ltr"
-              className="text-left pl-12"
+              className="pl-12"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+            <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
               {t.currency.symbol}
             </span>
           </div>
@@ -222,10 +221,9 @@ function ServiceForm({
               onChange={(e) =>
                 handleChange("estimatedDuration", parseInt(e.target.value) || 0)
               }
-              dir="ltr"
-              className="text-left pl-12"
+              className="pl-12"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+            <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
               {t.services.minutes}
             </span>
           </div>
@@ -440,8 +438,8 @@ export function ServicesPage() {
     const inactive = services.filter((s) => !s.isActive).length;
     const avgPrice = services.length
       ? Math.round(
-          services.reduce((acc, s) => acc + s.price, 0) / services.length,
-        )
+        services.reduce((acc, s) => acc + s.price, 0) / services.length,
+      )
       : 0;
     return { total: services.length, active, inactive, avgPrice };
   }, [services]);

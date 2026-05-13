@@ -143,9 +143,9 @@ function PermissionGrid({
                 variant={currentLevel === "none" ? "secondary" : "default"}
                 className={cn(
                   currentLevel === "write" &&
-                    "bg-success/10 text-success border-success/20",
+                  "bg-success/10 text-success border-success/20",
                   currentLevel === "read" &&
-                    "bg-chart-3/10 text-chart-3 border-chart-3/20",
+                  "bg-chart-3/10 text-chart-3 border-chart-3/20",
                   currentLevel === "none" && "bg-muted text-muted-foreground",
                 )}
               >
@@ -227,7 +227,7 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
   const positions: UserPosition[] = ["admin", "manager", "cashier", "viewer"];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 rtl-auto">
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
@@ -248,8 +248,6 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
             value={formData.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
             placeholder="+966500000000"
-            dir="ltr"
-            className="text-left"
             required
           />
         </div>
@@ -267,8 +265,7 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
                   ? "اتركه فارغاً للحفاظ على كلمة المرور الحالية"
                   : "كلمة المرور"
               }
-              dir="ltr"
-              className="text-left pl-10"
+              className="pl-10"
             />
             <Button
               type="button"
@@ -808,7 +805,7 @@ export function UsersPage() {
             </div>
             <PermissionGrid
               permissions={viewingUser.role?.permissions || []}
-              onChange={() => {}}
+              onChange={() => { }}
               readonly
             />
             <Button

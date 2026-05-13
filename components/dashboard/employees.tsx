@@ -115,7 +115,7 @@ function EmployeeForm({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 rtl-auto">
       {/* Basic Info */}
       <div className="space-y-4">
         <div className="space-y-2">
@@ -136,8 +136,6 @@ function EmployeeForm({
             value={formData.phone}
             onChange={(e) => handleChange("phone", e.target.value)}
             placeholder="+966550000000"
-            dir="ltr"
-            className="text-left"
             required
           />
         </div>
@@ -173,15 +171,14 @@ function EmployeeForm({
               id="salary"
               type="number"
               min={0}
-              step={100}
+              step={0.01}
               value={formData.salary}
               onChange={(e) =>
                 handleChange("salary", parseFloat(e.target.value) || 0)
               }
-              dir="ltr"
-              className="text-left pl-12"
+              className="pl-12"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+            <span className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
               {t.currency.symbol}
             </span>
           </div>
