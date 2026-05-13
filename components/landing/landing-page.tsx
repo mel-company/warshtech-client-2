@@ -928,8 +928,6 @@ export function LandingPage() {
           <AnimatedSection>
             <div className="relative border-2 border-x-primary/20 overflow-hidden rounded-3xl bg-linear-to-br from-primary/40 via-30% via-white/0 to-primary/5 px-8 py-16 text-center text-primary">
               {/* Decorative elements */}
-              {/* <div className="absolute top-0 left-0 size-64 rounded-full bg-white/10 blur-3xl" />
-              <div className="absolute bottom-0 right-0 size-64 rounded-full bg-white/10 blur-3xl" /> */}
 
               <div className="relative z-10">
                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
