@@ -121,11 +121,16 @@ function ServiceForm({
       toast.error(t.validation.required);
       return;
     }
-    if (formData.price <= 0) {
+    const price = typeof formData.price === 'string' ? parseFloat(formData.price) : formData.price;
+    if (price <= 0) {
       toast.error("السعر يجب أن يكون أكبر من صفر");
       return;
     }
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      price: price,
+      estimatedDuration: typeof formData.estimatedDuration === 'string' ? parseInt(formData.estimatedDuration) : formData.estimatedDuration,
+    });
   };
 
   const IconComponent = iconMap[formData.icon || "Wrench"] || Wrench;
