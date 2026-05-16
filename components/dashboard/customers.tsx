@@ -18,6 +18,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import type { Customer, Car as CarType, CustomerFormData } from "@/types";
 import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -232,9 +233,10 @@ interface CustomerRowProps {
   customer: Customer;
   onEdit: (customer: Customer) => void;
   onDelete: (customer: Customer) => void;
+  canWrite: boolean;
 }
 
-function CustomerRow({ customer, onEdit, onDelete }: CustomerRowProps) {
+function CustomerRow({ customer, onEdit, onDelete, canWrite }: CustomerRowProps) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = React.useState(false);
 
@@ -293,26 +295,28 @@ function CustomerRow({ customer, onEdit, onDelete }: CustomerRowProps) {
                 <ChevronDown className="size-4" />
               )}
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="size-8">
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onEdit(customer)}>
-                  <Pencil className="ml-2 size-4" />
-                  {t.actions.edit}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive"
-                  onClick={() => onDelete(customer)}
-                >
-                  <Trash2 className="ml-2 size-4" />
-                  {t.actions.delete}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canWrite && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="size-8">
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onEdit(customer)}>
+                    <Pencil className="ml-2 size-4" />
+                    {t.actions.edit}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={() => onDelete(customer)}
+                  >
+                    <Trash2 className="ml-2 size-4" />
+                    {t.actions.delete}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </TableCell>
       </TableRow>
@@ -356,6 +360,17 @@ function CustomerRow({ customer, onEdit, onDelete }: CustomerRowProps) {
 
 export function CustomersPage() {
   const { t } = useTranslation();
+  const { hasPermission, user } = useAuth();
+  const canWrite = hasPermission("customers", "write");
+
+  // Debug logging - remove after testing
+  React.useEffect(() => {
+    console.log('[DEBUG] User:', user);
+    console.log('[DEBUG] User role:', user?.role);
+    console.log('[DEBUG] User permissions:', user?.permissions);
+    console.log('[DEBUG] canWrite for customers:', canWrite);
+  }, [user, canWrite]);
+
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -503,10 +518,12 @@ export function CustomersPage() {
             إدارة بيانات العملاء وسياراتهم
           </p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="ml-1 size-4" />
-          {t.customers.addNew}
-        </Button>
+        {canWrite && (
+          <Button onClick={handleAddNew}>
+            <Plus className="ml-1 size-4" />
+            {t.customers.addNew}
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -582,7 +599,7 @@ export function CustomersPage() {
                   ? t.messages.empty.noResults
                   : "ابدأ بإضافة عميل جديد"}
               </p>
-              {!searchQuery && (
+              {canWrite && !searchQuery && (
                 <Button className="mt-4" onClick={handleAddNew}>
                   <Plus className="ml-1 size-4" />
                   {t.customers.addNew}
@@ -610,6 +627,7 @@ export function CustomersPage() {
                     customer={customer}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    canWrite={canWrite}
                   />
                 ))}
               </TableBody>

@@ -123,6 +123,8 @@ export type Permission =
   | 'ROLES_WRITE'
   | 'SETTINGS_READ'
   | 'SETTINGS_WRITE'
+  | 'INVOICES_READ'
+  | 'INVOICES_WRITE'
 
 export interface Role {
   id: string
@@ -240,4 +242,87 @@ export interface UserFormData {
   position: UserPosition
   roleId: string | null
   isActive: boolean
+}
+
+// -----------------------------------------------------------------------------
+// Invoice Types
+// -----------------------------------------------------------------------------
+
+export type InvoiceStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED'
+
+export interface InvoiceProduct {
+  id: string
+  productId: string
+  quantity: number
+  unitPrice: number
+  minPrice: number
+  total: number
+  product: {
+    id: string
+    name: string
+    unit: string
+  }
+}
+
+export interface InvoiceService {
+  id: string
+  serviceId: string
+  price: number
+  minPrice: number
+  service: {
+    id: string
+    name: string
+  }
+}
+
+export interface Invoice {
+  id: string
+  invoiceNumber: string
+  customerId: string
+  carId: string
+  totalPrice: number
+  minPrice: number
+  finalPrice: number
+  notes?: string
+  status: InvoiceStatus
+  customer: {
+    id: string
+    name: string
+    phone: string
+  }
+  car: {
+    id: string
+    name: string
+    number: string
+    model: string
+    color: string
+  }
+  products: InvoiceProduct[]
+  services: InvoiceService[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface InvoiceFormProduct {
+  productId: string
+  productName: string
+  quantity: number
+  unitPrice: number
+  minPrice: number
+  unit: string
+}
+
+export interface InvoiceFormService {
+  serviceId: string
+  serviceName: string
+  price: number
+}
+
+export interface InvoiceFormData {
+  customerId: string
+  carId: string
+  products: { productId: string; quantity: number; unitPrice: number }[]
+  services: { serviceId: string; price: number }[]
+  finalPrice: number
+  notes?: string
 }

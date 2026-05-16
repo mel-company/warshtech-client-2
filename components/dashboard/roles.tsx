@@ -61,6 +61,7 @@ type ResourceType =
   | "services"
   | "employees"
   | "users"
+  | "invoices"
   | "settings";
 
 type PermissionLevel = "none" | "read" | "write";
@@ -71,6 +72,7 @@ const resourceIcons: Record<ResourceType, React.ElementType> = {
   services: Shield,
   employees: Users,
   users: Shield,
+  invoices: Shield,
   settings: Lock,
 };
 
@@ -83,6 +85,7 @@ const resourcePermissionMap: Record<
   services: { read: "SERVICES_READ", write: "SERVICES_WRITE" },
   employees: { read: "EMPLOYEES_READ", write: "EMPLOYEES_WRITE" },
   users: { read: "USERS_READ", write: "USERS_WRITE" },
+  invoices: { read: "INVOICES_READ", write: "INVOICES_WRITE" },
   settings: { read: "SETTINGS_READ", write: "SETTINGS_WRITE" },
 };
 
@@ -98,6 +101,7 @@ function PermissionGrid({
     "services",
     "employees",
     "users",
+    "invoices",
     "settings",
   ];
   const levels: PermissionLevel[] = ["none", "read", "write"];
@@ -238,6 +242,7 @@ function RoleForm({ role, onSubmit, onCancel, isLoading }: RoleFormProps) {
 export function RolesPage() {
   const { t } = useTranslation();
   const { hasPermission } = useAuth();
+  const canWrite = hasPermission("roles", "write");
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -351,7 +356,7 @@ export function RolesPage() {
           <h2 className="text-2xl font-bold">الأدوار والصلاحيات</h2>
           <p className="text-muted-foreground">إدارة الأدوار وصلاحيات الوصول</p>
         </div>
-        {hasAccess && (
+        {hasAccess && canWrite && (
           <Button onClick={handleAddNew}>
             <Plus className="ml-1 size-4" />
             إضافة دور جديد
@@ -431,7 +436,7 @@ export function RolesPage() {
                   <p className="text-sm text-muted-foreground">
                     {searchQuery ? t.messages.empty.noResults : "ابدأ بإضافة دور جديد"}
                   </p>
-                  {!searchQuery && (
+                  {canWrite && !searchQuery && (
                     <Button className="mt-4" onClick={handleAddNew}>
                       <Plus className="ml-1 size-4" />
                       إضافة دور جديد
@@ -468,30 +473,34 @@ export function RolesPage() {
                           {new Date(role.createdAt).toLocaleDateString("ar-SA")}
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8">
-                                <MoreHorizontal className="size-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {role.name !== 'Owner' && (
-                                <DropdownMenuItem onClick={() => handleEdit(role)}>
-                                  <Pencil className="ml-2 size-4" />
-                                  {t.actions.edit}
-                                </DropdownMenuItem>
-                              )}
-                              {role.name !== 'Owner' && (
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => handleDelete(role)}
-                                >
-                                  <Trash2 className="ml-2 size-4" />
-                                  {t.actions.delete}
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {canWrite ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="size-8">
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {role.name !== 'Owner' && (
+                                  <DropdownMenuItem onClick={() => handleEdit(role)}>
+                                    <Pencil className="ml-2 size-4" />
+                                    {t.actions.edit}
+                                  </DropdownMenuItem>
+                                )}
+                                {role.name !== 'Owner' && (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => handleDelete(role)}
+                                  >
+                                    <Trash2 className="ml-2 size-4" />
+                                    {t.actions.delete}
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

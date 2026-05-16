@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import type { Product, ProductUnit, ProductFormData } from "@/types";
 import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -248,9 +249,10 @@ interface ProductCardProps {
   product: Product;
   onEdit: (product: Product) => void;
   onDelete: (product: Product) => void;
+  canWrite: boolean;
 }
 
-function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+function ProductCard({ product, onEdit, onDelete, canWrite }: ProductCardProps) {
   const { t } = useTranslation();
 
   const getStockStatus = () => {
@@ -265,28 +267,30 @@ function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
 
   return (
     <Card className="card-hover group relative">
-      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="size-8">
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(product)}>
-              <Pencil className="ml-2 size-4" />
-              {t.actions.edit}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => onDelete(product)}
-            >
-              <Trash2 className="ml-2 size-4" />
-              {t.actions.delete}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {canWrite && (
+        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(product)}>
+                <Pencil className="ml-2 size-4" />
+                {t.actions.edit}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(product)}
+              >
+                <Trash2 className="ml-2 size-4" />
+                {t.actions.delete}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
@@ -355,6 +359,8 @@ function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
 
 export function ProductsPage() {
   const { t } = useTranslation();
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission("products", "write");
   const [products, setProducts] = React.useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterStatus, setFilterStatus] = React.useState<
@@ -492,10 +498,12 @@ export function ProductsPage() {
           <h2 className="text-2xl font-bold">{t.products.title}</h2>
           <p className="text-muted-foreground">إدارة المنتجات والمخزون</p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="ml-1 size-4" />
-          {t.products.addNew}
-        </Button>
+        {canWrite && (
+          <Button onClick={handleAddNew}>
+            <Plus className="ml-1 size-4" />
+            {t.products.addNew}
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -601,7 +609,7 @@ export function ProductsPage() {
                 ? t.messages.empty.noResults
                 : "ابدأ بإضافة منتج جديد"}
             </p>
-            {!searchQuery && filterStatus === "all" && (
+            {canWrite && !searchQuery && filterStatus === "all" && (
               <Button className="mt-4" onClick={handleAddNew}>
                 <Plus className="ml-1 size-4" />
                 {t.products.addNew}
@@ -617,6 +625,7 @@ export function ProductsPage() {
               product={product}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              canWrite={canWrite}
             />
           ))}
         </div>

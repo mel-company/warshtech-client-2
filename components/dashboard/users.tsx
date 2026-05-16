@@ -89,6 +89,7 @@ type ResourceType =
   | "services"
   | "employees"
   | "users"
+  | "invoices"
   | "settings";
 
 type PermissionLevel = "none" | "read" | "write";
@@ -99,6 +100,7 @@ const resourceIcons: Record<ResourceType, React.ElementType> = {
   services: Wrench,
   employees: UserCog,
   users: Shield,
+  invoices: FileText,
   settings: FileText,
 };
 
@@ -111,6 +113,7 @@ const resourcePermissionMap: Record<
   services: { read: "SERVICES_READ", write: "SERVICES_WRITE" },
   employees: { read: "EMPLOYEES_READ", write: "EMPLOYEES_WRITE" },
   users: { read: "USERS_READ", write: "USERS_WRITE" },
+  invoices: { read: "INVOICES_READ", write: "INVOICES_WRITE" },
   settings: { read: "SETTINGS_READ", write: "SETTINGS_WRITE" },
 };
 
@@ -126,6 +129,7 @@ function PermissionGrid({
     "services",
     "employees",
     "users",
+    "invoices",
     "settings",
   ];
   const levels: PermissionLevel[] = ["none", "read", "write"];
@@ -413,6 +417,7 @@ interface UserRowProps {
   onDelete: (user: User) => void;
   onToggleActive: (user: User) => void;
   onViewPermissions: (user: User) => void;
+  canWrite: boolean;
 }
 
 function UserRow({
@@ -421,6 +426,7 @@ function UserRow({
   onDelete,
   onToggleActive,
   onViewPermissions,
+  canWrite,
 }: UserRowProps) {
   const { t } = useTranslation();
 
@@ -500,7 +506,7 @@ function UserRow({
           <Badge variant="secondary" className="text-xs">
             Owner
           </Badge>
-        ) : (
+        ) : canWrite ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="size-8">
@@ -538,6 +544,16 @@ function UserRow({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs"
+            onClick={() => onViewPermissions(user)}
+          >
+            <Lock className="ml-1 size-3" />
+            الصلاحيات
+          </Button>
         )}
       </TableCell>
     </TableRow>
@@ -551,6 +567,7 @@ function UserRow({
 export function UsersPage() {
   const { t } = useTranslation();
   const { user: currentUser, hasPermission } = useAuth();
+  const canWrite = hasPermission("users", "write");
   const [users, setUsers] = React.useState<User[]>([]);
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -709,10 +726,12 @@ export function UsersPage() {
           <h2 className="text-2xl font-bold">{t.users.title}</h2>
           <p className="text-muted-foreground">إدارة المستخدمين والصلاحيات</p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="ml-1 size-4" />
-          {t.users.addNew}
-        </Button>
+        {canWrite && (
+          <Button onClick={handleAddNew}>
+            <Plus className="ml-1 size-4" />
+            {t.users.addNew}
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -839,6 +858,7 @@ export function UsersPage() {
                     onDelete={handleDelete}
                     onToggleActive={handleToggleActive}
                     onViewPermissions={handleViewPermissions}
+                    canWrite={canWrite}
                   />
                 ))}
               </TableBody>

@@ -104,12 +104,17 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
         });
 
         if (refreshResponse.ok) {
-          const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await refreshResponse.json();
+          const { accessToken: newAccessToken, refreshToken: newRefreshToken, user } = await refreshResponse.json();
 
-          // Update tokens in localStorage
+          // Update tokens and user data in localStorage
           if (typeof window !== "undefined") {
             localStorage.setItem("access_token", newAccessToken);
             localStorage.setItem("refresh_token", newRefreshToken);
+            if (user) {
+              localStorage.setItem("auth_user", JSON.stringify(user));
+              // Notify auth context to pick up the fresh user data
+              window.dispatchEvent(new CustomEvent("auth_user_updated", { detail: user }));
+            }
           }
 
           // Retry the original request with the new token

@@ -17,6 +17,7 @@ import {
   Car,
   ChevronLeft,
   Menu,
+  FileText,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
@@ -54,13 +55,14 @@ import {
 } from '@/components/ui/tooltip'
 
 const navItems = [
-  { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' as const },
-  { href: '/dashboard/customers', icon: Users, labelKey: 'customers' as const },
-  { href: '/dashboard/products', icon: Package, labelKey: 'products' as const },
-  { href: '/dashboard/services', icon: Wrench, labelKey: 'services' as const },
-  { href: '/dashboard/employees', icon: UserCog, labelKey: 'employees' as const },
-  { href: '/dashboard/users', icon: Shield, labelKey: 'users' as const },
-  { href: '/dashboard/roles', icon: Shield, labelKey: 'roles' as const },
+  { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' as const, permission: null },
+  { href: '/dashboard/customers', icon: Users, labelKey: 'customers' as const, permission: 'customers' as const },
+  { href: '/dashboard/products', icon: Package, labelKey: 'products' as const, permission: 'products' as const },
+  { href: '/dashboard/services', icon: Wrench, labelKey: 'services' as const, permission: 'services' as const },
+  { href: '/dashboard/employees', icon: UserCog, labelKey: 'employees' as const, permission: 'employees' as const },
+  { href: '/dashboard/users', icon: Shield, labelKey: 'users' as const, permission: 'users' as const },
+  { href: '/dashboard/invoices', icon: FileText, labelKey: 'invoices' as const, permission: 'invoices' as const },
+  { href: '/dashboard/roles', icon: Shield, labelKey: 'roles' as const, permission: 'roles' as const },
 ]
 
 function ThemeToggle() {
@@ -109,8 +111,16 @@ function ThemeToggle() {
 function AppSidebar() {
   const pathname = usePathname()
   const { t } = useTranslation()
-  const { user, logout } = useAuth()
+  const { user, logout, hasPermission } = useAuth()
   const { state } = useSidebar()
+
+  // Filter nav items based on user permissions
+  const visibleNavItems = React.useMemo(() => {
+    return navItems.filter(item => {
+      if (!item.permission) return true // dashboard is always visible
+      return hasPermission(item.permission, 'read')
+    })
+  }, [hasPermission])
 
   const getInitials = (name: string) => {
     return name
@@ -138,12 +148,12 @@ function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item, index) => {
+              {visibleNavItems.map((item, index) => {
                 const isActive = pathname === item.href ||
                   (item.href !== '/dashboard' && pathname.startsWith(item.href))
                 return (
                   <React.Fragment key={item.href}>
-                    {index === navItems?.length - 2 && <div className='w-full h-px bg-zinc-200 dark:bg-zinc-800' />}
+                    {index === visibleNavItems?.length - 2 && <div className='w-full h-px bg-zinc-200 dark:bg-zinc-800' />}
                     <SidebarMenuItem >
                       <SidebarMenuButton
                         asChild
@@ -227,6 +237,7 @@ function DashboardHeader() {
     if (pathname.includes('/services')) return t.nav.services
     if (pathname.includes('/employees')) return t.nav.employees
     if (pathname.includes('/users')) return t.nav.users
+    if (pathname.includes('/invoices')) return t.nav.invoices
     if (pathname.includes('/roles')) return t.nav.roles
     if (pathname.includes('/settings')) return t.nav.settings
     return t.nav.dashboard

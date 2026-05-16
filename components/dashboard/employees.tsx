@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import type { Employee, EmployeePosition, EmployeeFormData } from "@/types";
 import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -248,6 +249,7 @@ interface EmployeeRowProps {
   onEdit: (employee: Employee) => void;
   onDelete: (employee: Employee) => void;
   onToggleActive: (employee: Employee) => void;
+  canWrite: boolean;
 }
 
 function EmployeeRow({
@@ -255,6 +257,7 @@ function EmployeeRow({
   onEdit,
   onDelete,
   onToggleActive,
+  canWrite,
 }: EmployeeRowProps) {
   const { t } = useTranslation();
 
@@ -340,39 +343,43 @@ function EmployeeRow({
         </Badge>
       </TableCell>
       <TableCell>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8">
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(employee)}>
-              <Pencil className="ml-2 size-4" />
-              {t.actions.edit}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onToggleActive(employee)}>
-              {employee.isActive ? (
-                <>
-                  <XCircle className="ml-2 size-4" />
-                  إيقاف
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="ml-2 size-4" />
-                  تفعيل
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => onDelete(employee)}
-            >
-              <Trash2 className="ml-2 size-4" />
-              {t.actions.delete}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canWrite ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(employee)}>
+                <Pencil className="ml-2 size-4" />
+                {t.actions.edit}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleActive(employee)}>
+                {employee.isActive ? (
+                  <>
+                    <XCircle className="ml-2 size-4" />
+                    إيقاف
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="ml-2 size-4" />
+                    تفعيل
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(employee)}
+              >
+                <Trash2 className="ml-2 size-4" />
+                {t.actions.delete}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          <span className="text-muted-foreground text-sm">-</span>
+        )}
       </TableCell>
     </TableRow>
   );
@@ -384,6 +391,8 @@ function EmployeeRow({
 
 export function EmployeesPage() {
   const { t } = useTranslation();
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission("employees", "write");
   const [employees, setEmployees] = React.useState<Employee[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [filterPosition, setFilterPosition] = React.useState<
@@ -566,10 +575,12 @@ export function EmployeesPage() {
           >
             <RefreshCw className={cn("size-4", isFetching && "animate-spin")} />
           </Button>
-          <Button onClick={handleAddNew}>
-            <Plus className="ml-1 size-4" />
-            {t.employees.addNew}
-          </Button>
+          {canWrite && (
+            <Button onClick={handleAddNew}>
+              <Plus className="ml-1 size-4" />
+              {t.employees.addNew}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -662,7 +673,7 @@ export function EmployeesPage() {
                   ? t.messages.empty.noResults
                   : "ابدأ بإضافة موظف جديد"}
               </p>
-              {!searchQuery && filterPosition === "all" && (
+              {canWrite && !searchQuery && filterPosition === "all" && (
                 <Button className="mt-4" onClick={handleAddNew}>
                   <Plus className="ml-1 size-4" />
                   {t.employees.addNew}
@@ -695,6 +706,7 @@ export function EmployeesPage() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onToggleActive={handleToggleActive}
+                    canWrite={canWrite}
                   />
                 ))}
               </TableBody>

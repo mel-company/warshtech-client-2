@@ -68,6 +68,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setTenantId(storedTenantId);
         }
         setState({ user, isAuthenticated: true, isLoading: false });
+
+        // Fetch fresh user data from server to pick up permission changes
+        apiClient
+          .get<AuthUser>("/auth/me")
+          .then((freshUser) => {
+            localStorage.setItem("auth_user", JSON.stringify(freshUser));
+            setState((prev) => ({
+              ...prev,
+              user: freshUser,
+            }));
+          })
+          .catch(() => {
+            // Silently ignore — cached data is still usable
+          });
       } catch {
         setState({ user: null, isAuthenticated: false, isLoading: false });
       }
@@ -76,6 +90,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Listen for user data updates from token refresh
+  React.useEffect(() => {
+    const handleUserUpdated = (e: Event) => {
+      const user = (e as CustomEvent).detail as AuthUser;
+      if (user) {
+        setState((prev) => ({
+          ...prev,
+          user,
+          isAuthenticated: true,
+        }));
+      }
+    };
+    window.addEventListener("auth_user_updated", handleUserUpdated);
+    return () => window.removeEventListener("auth_user_updated", handleUserUpdated);
+  }, []);
 
   const sendOTP = React.useCallback(
     async (phone: string): Promise<boolean> => {

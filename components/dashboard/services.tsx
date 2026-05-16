@@ -25,6 +25,7 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import type { Service, ServiceFormData } from "@/types";
 import apiClient from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -273,6 +274,7 @@ interface ServiceCardProps {
   onEdit: (service: Service) => void;
   onDelete: (service: Service) => void;
   onToggleActive: (service: Service) => void;
+  canWrite: boolean;
 }
 
 function ServiceCard({
@@ -280,6 +282,7 @@ function ServiceCard({
   onEdit,
   onDelete,
   onToggleActive,
+  canWrite,
 }: ServiceCardProps) {
   const { t } = useTranslation();
   const IconComponent = iconMap[service.icon || "Wrench"] || Wrench;
@@ -291,41 +294,43 @@ function ServiceCard({
         !service.isActive && "opacity-60",
       )}
     >
-      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="size-8">
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => onEdit(service)}>
-              <Pencil className="ml-2 size-4" />
-              {t.actions.edit}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => onToggleActive(service)}>
-              {service.isActive ? (
-                <>
-                  <XCircle className="ml-2 size-4" />
-                  تعطيل
-                </>
-              ) : (
-                <>
-                  <CheckCircle className="ml-2 size-4" />
-                  تفعيل
-                </>
-              )}
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={() => onDelete(service)}
-            >
-              <Trash2 className="ml-2 size-4" />
-              {t.actions.delete}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {canWrite && (
+        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="size-8">
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEdit(service)}>
+                <Pencil className="ml-2 size-4" />
+                {t.actions.edit}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onToggleActive(service)}>
+                {service.isActive ? (
+                  <>
+                    <XCircle className="ml-2 size-4" />
+                    تعطيل
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="ml-2 size-4" />
+                    تفعيل
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => onDelete(service)}
+              >
+                <Trash2 className="ml-2 size-4" />
+                {t.actions.delete}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
 
       <CardContent className="p-6 text-center">
         <div
@@ -385,6 +390,8 @@ function ServiceCard({
 
 export function ServicesPage() {
   const { t } = useTranslation();
+  const { hasPermission } = useAuth();
+  const canWrite = hasPermission("services", "write");
   const [services, setServices] = React.useState<Service[]>([]);
   const [isFetching, setIsFetching] = React.useState(true);
 
@@ -517,10 +524,12 @@ export function ServicesPage() {
           <h2 className="text-2xl font-bold">{t.services.title}</h2>
           <p className="text-muted-foreground">إدارة خدمات المركز والأسعار</p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="ml-1 size-4" />
-          {t.services.addNew}
-        </Button>
+        {canWrite && (
+          <Button onClick={handleAddNew}>
+            <Plus className="ml-1 size-4" />
+            {t.services.addNew}
+          </Button>
+        )}
       </div>
 
       {/* Stats */}
@@ -619,7 +628,7 @@ export function ServicesPage() {
                 ? t.messages.empty.noResults
                 : "ابدأ بإضافة خدمة جديدة"}
             </p>
-            {!searchQuery && (
+            {canWrite && !searchQuery && (
               <Button className="mt-4" onClick={handleAddNew}>
                 <Plus className="ml-1 size-4" />
                 {t.services.addNew}
@@ -636,6 +645,7 @@ export function ServicesPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleActive={handleToggleActive}
+              canWrite={canWrite}
             />
           ))}
         </div>
