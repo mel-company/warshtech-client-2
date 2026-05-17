@@ -847,6 +847,7 @@ export function ProductsPage() {
           editingProduct ? "تعديل بيانات المنتج" : "إضافة منتج جديد للمخزون"
         }
         className="sm:max-w-[600px]"
+        dismissible={false}
       >
         <ProductForm
           product={editingProduct}

@@ -723,6 +723,7 @@ export function EmployeesPage() {
         description={
           editingEmployee ? "تعديل بيانات الموظف" : "إضافة موظف جديد للمركز"
         }
+        dismissible={false}
       >
         <EmployeeForm
           employee={editingEmployee}

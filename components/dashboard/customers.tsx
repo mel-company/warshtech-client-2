@@ -646,6 +646,7 @@ export function CustomersPage() {
             ? "تعديل بيانات العميل وسياراته"
             : "إضافة عميل جديد مع سياراته"
         }
+        dismissible={false}
       >
         <CustomerForm
           customer={editingCustomer}

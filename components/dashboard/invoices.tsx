@@ -1436,6 +1436,7 @@ export function InvoicesPage() {
         title={t.invoices.addNew}
         description="إنشاء فاتورة جديدة مع الخدمات والمنتجات"
         className="sm:max-w-[700px]"
+        dismissible={false}
       >
         <InvoiceForm
           onSubmit={handleSubmit}
@@ -1454,6 +1455,7 @@ export function InvoicesPage() {
         title={`${t.actions.edit} — ${editingInvoice?.invoiceNumber || ""}`}
         description="تعديل الفاتورة"
         className="sm:max-w-[700px]"
+        dismissible={false}
       >
         {editingInvoice && (
           <InvoiceForm

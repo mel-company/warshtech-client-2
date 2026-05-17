@@ -521,6 +521,7 @@ export function RolesPage() {
                 : "إنشاء دور جديد مع صلاحيات مخصصة"
             }
             className="sm:max-w-[600px]"
+            dismissible={false}
           >
             <RoleForm
               role={editingRole}

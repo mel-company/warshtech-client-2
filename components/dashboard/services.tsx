@@ -659,6 +659,7 @@ export function ServicesPage() {
         description={
           editingService ? "تعديل بيانات الخدمة" : "إضافة خدمة جديدة للمركز"
         }
+        dismissible={false}
       >
         <ServiceForm
           service={editingService}

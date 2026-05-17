@@ -32,6 +32,7 @@ interface ResponsiveModalProps {
   footer?: React.ReactNode
   className?: string
   showCloseButton?: boolean
+  dismissible?: boolean
 }
 
 export function ResponsiveModal({
@@ -43,12 +44,13 @@ export function ResponsiveModal({
   footer,
   className,
   showCloseButton = true,
+  dismissible = true,
 }: ResponsiveModalProps) {
   const isMobile = useIsMobile()
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer open={open} onOpenChange={onOpenChange} dismissible={dismissible}>
         <DrawerContent className={cn('max-h-[90vh]', className)}>
           <DrawerHeader className="text-right" dir="rtl">
             <DrawerTitle className="text-right">{title}</DrawerTitle>
@@ -74,6 +76,8 @@ export function ResponsiveModal({
       <DialogContent
         className={cn('sm:max-w-[500px] max-h-[90vh] flex flex-col', className)}
         showCloseButton={showCloseButton}
+        onPointerDownOutside={(e) => !dismissible && e.preventDefault()}
+        onInteractOutside={(e) => !dismissible && e.preventDefault()}
       >
         <DialogHeader className="text-right" dir="rtl">
           <DialogTitle className="text-right">{title}</DialogTitle>
@@ -104,6 +108,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void
   variant?: 'default' | 'destructive'
   isLoading?: boolean
+  dismissible?: boolean
 }
 
 export function ConfirmDialog({
@@ -116,6 +121,7 @@ export function ConfirmDialog({
   onConfirm,
   variant = 'default',
   isLoading = false,
+  dismissible = true,
 }: ConfirmDialogProps) {
   const isMobile = useIsMobile()
 
@@ -141,7 +147,7 @@ export function ConfirmDialog({
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer open={open} onOpenChange={onOpenChange} dismissible={dismissible}>
         <DrawerContent>
           <DrawerHeader className="text-right" dir="rtl">
             <DrawerTitle className="text-right">{title}</DrawerTitle>
@@ -157,7 +163,11 @@ export function ConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[400px]">
+      <DialogContent
+        className="sm:max-w-[400px]"
+        onPointerDownOutside={(e) => !dismissible && e.preventDefault()}
+        onInteractOutside={(e) => !dismissible && e.preventDefault()}
+      >
         <DialogHeader className="text-right" dir="rtl">
           <DialogTitle className="text-right">{title}</DialogTitle>
           <DialogDescription className="text-right">{description}</DialogDescription>

@@ -878,6 +878,7 @@ export function UsersPage() {
             : "إضافة مستخدم جديد للنظام"
         }
         className="sm:max-w-[600px]"
+        dismissible={false}
       >
         <UserForm
           user={editingUser}
