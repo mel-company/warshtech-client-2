@@ -24,6 +24,7 @@ import {
   CircleCheck,
   Loader2,
   Pencil,
+  Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -935,6 +936,28 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
 
 function InvoiceDetail({ invoice }: { invoice: Invoice }) {
   const { t } = useTranslation();
+  const { tenant } = useAuth();
+  const [isPrinting, setIsPrinting] = React.useState(false);
+
+  const handlePrint = async () => {
+    setIsPrinting(true);
+    try {
+      const [{ pdf }, { InvoicePDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("./invoice-pdf"),
+      ]);
+      const blob = await pdf(
+        React.createElement(InvoicePDF, { invoice, currency: t.currency.symbol, workshopName: tenant?.name || "" }) as any
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (error) {
+      console.error("Failed to generate PDF:", error);
+      toast.error(t.messages.error.general);
+    } finally {
+      setIsPrinting(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -1016,6 +1039,19 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
           <p className="text-sm">{invoice.notes}</p>
         </div>
       )}
+
+      {/* Print Button */}
+      <Separator />
+      <div className="flex justify-end">
+        <Button variant="outline" onClick={handlePrint} disabled={isPrinting}>
+          {isPrinting ? (
+            <Loader2 className="ml-2 size-4 animate-spin" />
+          ) : (
+            <Printer className="ml-2 size-4" />
+          )}
+          {isPrinting ? t.messages.loading : t.actions.print}
+        </Button>
+      </div>
     </div>
   );
 }
