@@ -398,6 +398,7 @@ export const ar = {
       updated: "تم التحديث بنجاح",
       deleted: "تم الحذف بنجاح",
       saved: "تم الحفظ بنجاح",
+      uploaded: "تم الرفع بنجاح",
     },
     error: {
       general: "حدث خطأ ما، يرجى المحاولة مرة أخرى",
@@ -411,6 +412,7 @@ export const ar = {
       createFailed: "فشل في إنشاء البيانات",
       updateFailed: "فشل في تحديث البيانات",
       deleteFailed: "فشل في حذف البيانات",
+      upload: "فشل في رفع الملف",
     },
     confirm: {
       delete: "هل أنت متأكد من الحذف؟",

@@ -352,6 +352,7 @@ export const en = {
       updated: "Updated successfully",
       deleted: "Deleted successfully",
       saved: "Saved successfully",
+      uploaded: "Uploaded successfully",
     },
     error: {
       general: "Something went wrong, please try again",
@@ -365,6 +366,7 @@ export const en = {
       createFailed: "Failed to create data",
       updateFailed: "Failed to update data",
       deleteFailed: "Failed to delete data",
+      upload: "Failed to upload file",
     },
     confirm: {
       delete: "Are you sure you want to delete?",

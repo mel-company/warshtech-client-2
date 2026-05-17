@@ -12,6 +12,7 @@ import {
   BarChart3,
   Barcode,
   Info,
+  Box,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,7 +20,8 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { Product, ProductUnit, ProductFormData } from "@/types";
-import apiClient from "@/lib/api";
+import apiClient, { uploadFile } from "@/lib/api";
+import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -76,12 +78,109 @@ function ProductForm({
     barcode: product?.barcode || "",
     description: product?.description || "",
   });
+  const [isUploading, setIsUploading] = React.useState(false);
 
   const handleChange = (
     field: keyof ProductFormData,
-    value: string | number | boolean | ProductUnit,
+    value: string | number | boolean | ProductUnit | string[],
   ) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      // Compress image if too large (max 2MB)
+      let processedFile = file;
+      if (file.size > 2 * 1024 * 1024) {
+        processedFile = await compressImage(file);
+      }
+
+      const key = `products/${Date.now()}-${processedFile.name}`;
+      const publicUrl = await uploadFile(processedFile, key);
+
+      setFormData((prev) => ({
+        ...prev,
+        photos: [publicUrl], // Only one photo
+      }));
+      toast.success(t.messages.success.uploaded);
+    } catch (error) {
+      console.error("Failed to upload photo:", error);
+      toast.error(t.messages.error.upload);
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      e.target.value = "";
+    }
+  };
+
+  const compressImage = async (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+
+          // Calculate new dimensions (max 1200px)
+          const maxSize = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxSize) {
+              height *= maxSize / width;
+              width = maxSize;
+            }
+          } else {
+            if (height > maxSize) {
+              width *= maxSize / height;
+              height = maxSize;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress to JPEG with 0.8 quality
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Failed to compress image'));
+              }
+            },
+            'image/jpeg',
+            0.8
+          );
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -140,6 +239,70 @@ function ProductForm({
             onChange={(e) => handleChange("barcode", e.target.value)}
             placeholder="6291001234567"
           />
+        </div>
+
+        {/* Photos */}
+        <div className="space-y-2">
+          <Label htmlFor="photos">{t.labels.photos}</Label>
+          <div className="space-y-3">
+            {/* Upload Area */}
+            <div className="relative">
+              <Input
+                id="photos"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                disabled={isUploading}
+                className="hidden"
+              />
+              {formData.photos.length > 0 ? (
+                <div className="relative border-2 border-dashed rounded-lg overflow-hidden flex justify-center">
+                  <img
+                    src={formData.photos[0]}
+                    alt="Product photo"
+                    className="max-h-64 max-w-64 object-contain"
+                  />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => document.getElementById('photos')?.click()}
+                      disabled={isUploading}
+                    >
+                      <Upload className="size-4 mr-2" />
+                      {t.actions.upload}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleRemovePhoto(0)}
+                    >
+                      <X className="size-4 mr-2" />
+                      {t.actions.delete}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => document.getElementById('photos')?.click()}
+                  className={cn(
+                    "border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors",
+                    isUploading ? "opacity-50 cursor-not-allowed" : "hover:border-primary hover:bg-primary/5"
+                  )}
+                >
+                  <Upload className="size-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    {isUploading ? t.messages.loading : t.actions.upload}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Click to upload or drag and drop
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -336,9 +499,17 @@ function ProductCard({ product, onEdit, onDelete, canWrite }: ProductCardProps) 
 
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          <div className="flex size-14 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-            <Package className="size-7" />
-          </div>
+          {product.photos && product.photos.length > 0 ? (
+            <img
+              src={product.photos[0]}
+              alt={product.name}
+              className="size-14 rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div className="flex size-14 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+              <Package className="size-7" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{product.name}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -356,23 +527,13 @@ function ProductCard({ product, onEdit, onDelete, canWrite }: ProductCardProps) 
           </div>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-          <div>
-            <p className="text-muted-foreground text-xs">
-              {t.products.costPrice}
-            </p>
-            <p className="font-medium">
-              {product.costPrice} {t.currency.symbol}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground text-xs">
-              {t.products.salePrice}
-            </p>
-            <p className="font-semibold text-primary">
-              {product.salePrice} {t.currency.symbol}
-            </p>
-          </div>
+        <div className="mt-4 text-sm">
+          <p className="text-muted-foreground text-xs">
+            {t.products.salePrice}
+          </p>
+          <p className="font-semibold text-primary">
+            {product.salePrice} {t.currency.symbol}
+          </p>
         </div>
 
         <div className="mt-4 flex items-center justify-between">
@@ -389,8 +550,9 @@ function ProductCard({ product, onEdit, onDelete, canWrite }: ProductCardProps) 
           >
             {stockStatus.label}
           </Badge>
-          <span className="text-sm text-muted-foreground">
-            {product.stock} {t.products.units[product.unit]}
+          <span className="text-sm text-muted-foreground flex items-center gap-1">
+            <Box className="size-3" />
+            {product.stock}
           </span>
         </div>
       </CardContent>

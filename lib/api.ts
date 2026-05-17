@@ -171,4 +171,28 @@ export const apiClient = {
     withErrorHandling(api<T>(endpoint, { ...options, method: "DELETE" })),
 };
 
+// Upload a file using presigned URL
+export async function uploadFile(file: File, key: string): Promise<string> {
+  // Get presigned URL from server
+  const { url, publicUrl } = await apiClient.post<{ url: string; publicUrl: string }>(
+    "/upload/presigned-url",
+    { key, contentType: file.type }
+  );
+
+  // Upload file directly to R2 using presigned URL
+  const response = await fetch(url, {
+    method: "PUT",
+    body: file,
+    headers: {
+      "Content-Type": file.type,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to upload file");
+  }
+
+  return publicUrl;
+}
+
 export default apiClient;
