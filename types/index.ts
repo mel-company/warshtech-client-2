@@ -267,6 +267,7 @@ export interface InvoiceProduct {
     unit: string
     unitValue: number
     unitAdjustable: boolean
+    photos: string[]
   }
 }
 
@@ -312,6 +313,7 @@ export interface Invoice {
 export interface InvoiceFormProduct {
   productId: string
   productName: string
+  productPhoto?: string
   quantity: number
   unitPrice: number
   minPrice: number
@@ -327,6 +329,7 @@ export interface InvoiceFormService {
   serviceId: string
   serviceName: string
   price: number
+  minPrice: number
 }
 
 export interface InvoiceFormData {

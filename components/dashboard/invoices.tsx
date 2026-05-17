@@ -165,12 +165,14 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
       serviceId: s.serviceId,
       serviceName: s.service?.name || "",
       price: Number(s.price),
+      minPrice: Number(s.minPrice) || Number(s.price),
     })) || [],
   );
   const [selectedProducts, setSelectedProducts] = React.useState<InvoiceFormProduct[]>(
     invoice?.products?.map((p) => ({
       productId: p.productId,
       productName: p.product?.name || "",
+      productPhoto: p.product?.photos?.[0] || undefined,
       quantity: Number(p.quantity),
       unitPrice: Number(p.unitPrice),
       minPrice: Number(p.minPrice),
@@ -216,10 +218,15 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
     0,
   );
   const totalPrice = totalServicesPrice + totalProductsPrice;
-  const minPrice = selectedProducts.reduce(
+  const minProductsPrice = selectedProducts.reduce(
     (sum, p) => sum + p.minPrice,
     0,
   );
+  const minServicesPrice = selectedServices.reduce(
+    (sum, s) => sum + s.minPrice,
+    0,
+  );
+  const minPrice = minProductsPrice + minServicesPrice;
 
   // Auto-set final price when total changes
   React.useEffect(() => {
@@ -405,7 +412,7 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
   const handleAddService = (service: Service) => {
     setSelectedServices([
       ...selectedServices,
-      { serviceId: service.id, serviceName: service.name, price: Number(service.price) },
+      { serviceId: service.id, serviceName: service.name, price: Number(service.price), minPrice: Number(service.price) },
     ]);
     setServiceSearch("");
     setShowServiceDropdown(false);
@@ -422,20 +429,22 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
 
   const handleAddProduct = (product: Product) => {
     const uv = Number(product.unitValue) || 1;
+    const prodMinPrice = Number(product.minPrice) || Number(product.salePrice);
     setSelectedProducts([
       ...selectedProducts,
       {
         productId: product.id,
         productName: product.name,
+        productPhoto: product.photos?.[0] || undefined,
         quantity: uv,
         unitPrice: Number(product.salePrice),
-        minPrice: Number(product.minPrice),
+        minPrice: prodMinPrice,
         unit: product.unit,
         unitValue: uv,
         unitAdjustable: product.unitAdjustable || false,
         originalUnitValue: uv,
         originalPrice: Number(product.salePrice),
-        originalMinPrice: Number(product.minPrice),
+        originalMinPrice: prodMinPrice,
       },
     ]);
     setProductSearch("");
@@ -724,9 +733,14 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
                   className="flex w-full items-center justify-between px-3 py-2 text-sm hover:bg-muted"
                   onClick={() => handleAddProduct(product)}
                 >
-                  <div>
+                  <div className="flex items-center gap-2">
+                    {product.photos?.[0] ? (
+                      <img src={product.photos[0]} alt={product.name} className="size-6 rounded object-cover shrink-0" />
+                    ) : (
+                      <Package className="size-4 text-muted-foreground shrink-0" />
+                    )}
                     <span>{product.name}</span>
-                    <span className="mx-2 text-muted-foreground text-xs">
+                    <span className="text-muted-foreground text-xs">
                       ({Number(product.unitValue) || 1} {t.products.units[product.unit as keyof typeof t.products.units] || product.unit})
                     </span>
                   </div>
@@ -742,42 +756,54 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
         ) : (
           <div className="space-y-2">
             {selectedProducts.map((product, index) => (
-              <div key={product.productId} className="rounded-lg border p-3 space-y-2">
-                <div className="flex items-center gap-2">
-                  <Package className="size-4 text-muted-foreground shrink-0" />
-                  <span className="text-sm font-medium truncate flex-1">{product.productName}</span>
-                  <Button type="button" variant="ghost" size="icon" className="size-7 text-destructive shrink-0" onClick={() => handleRemoveProduct(index)}>
-                    <X className="size-4" />
-                  </Button>
-                </div>
-                <div className="flex items-center gap-2">
-                  {product.unitAdjustable ? (
-                    <div className="flex items-center gap-1 flex-1">
-                      <Input
-                        type="number"
-                        value={product.unitValue}
-                        onChange={(e) => handleProductUnitValueChange(index, Math.max(0.01, Number(e.target.value)))}
-                        className="w-20 text-center"
-                        min={0.01}
-                        step={0.1}
-                      />
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        {t.products.units[product.unit as keyof typeof t.products.units] || product.unit}
-                      </span>
-                    </div>
+              <div key={product.productId} className="rounded-lg border p-3">
+                <div className="flex gap-3">
+                  {product.productPhoto ? (
+                    <img src={product.productPhoto} alt={product.productName} className="size-14 rounded-lg object-cover shrink-0" />
                   ) : (
-                    <span className="text-sm text-muted-foreground flex-1">
-                      {product.unitValue} {t.products.units[product.unit as keyof typeof t.products.units] || product.unit}
-                    </span>
+                    <div className="flex size-14 items-center justify-center rounded-lg bg-muted shrink-0">
+                      <Package className="size-6 text-muted-foreground" />
+                    </div>
                   )}
-                  <Input
-                    type="number"
-                    value={product.unitPrice}
-                    onChange={(e) => handleProductPriceChange(index, Number(e.target.value))}
-                    className="w-24 text-center"
-                    min={0}
-                  />
-                  <span className="text-xs text-muted-foreground shrink-0">{t.currency.symbol}</span>
+                  <div className="flex-1 min-w-0 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium truncate">{product.productName}</span>
+                      <Button type="button" variant="ghost" size="icon" className="size-6 text-destructive shrink-0" onClick={() => handleRemoveProduct(index)}>
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {product.unitAdjustable ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <Input
+                            type="number"
+                            value={product.unitValue}
+                            onChange={(e) => handleProductUnitValueChange(index, Math.max(0.01, Number(e.target.value)))}
+                            className="w-16 h-8 text-center text-sm"
+                            min={0.01}
+                            step={0.1}
+                          />
+                          <span className="text-xs text-muted-foreground shrink-0">
+                            {t.products.units[product.unit as keyof typeof t.products.units] || product.unit}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground flex-1">
+                          {product.unitValue} {t.products.units[product.unit as keyof typeof t.products.units] || product.unit}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Input
+                          type="number"
+                          value={product.unitPrice}
+                          onChange={(e) => handleProductPriceChange(index, Number(e.target.value))}
+                          className="w-20 h-8 text-center text-sm"
+                          min={product.minPrice}
+                        />
+                        <span className="text-xs text-muted-foreground">{t.currency.symbol}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -840,8 +866,11 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
             type="number"
             value={finalPrice}
             onChange={(e) => setFinalPrice(Number(e.target.value))}
-            className="text-lg font-bold text-center"
+            className={cn("text-lg font-bold text-center", finalPrice < minPrice && "border-destructive")}
           />
+          {finalPrice < minPrice && (
+            <p className="text-xs text-destructive">{t.invoices.priceBelowMin}</p>
+          )}
         </div>
       </div>
 
@@ -951,11 +980,18 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
           <div>
             <p className="text-sm font-semibold mb-2">{t.invoices.products}</p>
             {invoice.products.map((p) => (
-              <div key={p.id} className="flex justify-between text-sm py-1">
-                <span>
-                  {p.product.name} — {Number(p.quantity)} {t.products.units[p.product.unit as keyof typeof t.products.units] || p.product.unit}
-                </span>
-                <span>{Number(p.total)} {t.currency.symbol}</span>
+              <div key={p.id} className="flex items-center justify-between text-sm py-1 gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  {p.product.photos?.[0] ? (
+                    <img src={p.product.photos[0]} alt={p.product.name} className="size-6 rounded object-cover shrink-0" />
+                  ) : (
+                    <Package className="size-4 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="truncate">
+                    {p.product.name} — {Number(p.quantity)} {t.products.units[p.product.unit as keyof typeof t.products.units] || p.product.unit}
+                  </span>
+                </div>
+                <span className="shrink-0">{Number(p.total)} {t.currency.symbol}</span>
               </div>
             ))}
           </div>
