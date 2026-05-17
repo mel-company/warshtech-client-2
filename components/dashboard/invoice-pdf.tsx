@@ -6,6 +6,7 @@ import {
   Page,
   View,
   Text,
+  Image,
   StyleSheet,
   Font,
 } from "@react-pdf/renderer";
@@ -74,6 +75,13 @@ const styles = StyleSheet.create({
   headerLeft: {
     alignItems: "flex-start",
     marginTop: 6,
+  },
+  logo: {
+    width: 56,
+    height: 56,
+    objectFit: "contain" as const,
+    borderRadius: 8,
+    marginBottom: 6,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -274,9 +282,10 @@ interface InvoicePDFProps {
   invoice: Invoice;
   currency?: string;
   workshopName?: string;
+  workshopLogo?: string | null;
 }
 
-export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "" }: InvoicePDFProps) {
+export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "", workshopLogo }: InvoicePDFProps) {
   const statusConf = STATUS_COLORS[invoice.status] || STATUS_COLORS.PENDING;
   const createdAt = new Date(invoice.createdAt).toLocaleDateString("ar-SA", {
     year: "numeric",
@@ -300,6 +309,7 @@ export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "" }: I
             <Text style={styles.date}>{createdAt}</Text>
           </View>
           <View style={styles.headerLeft}>
+            {workshopLogo ? <Image src={workshopLogo} style={styles.logo} /> : null}
             <Text
               style={[
                 styles.statusBadge,

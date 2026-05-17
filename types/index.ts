@@ -340,3 +340,27 @@ export interface InvoiceFormData {
   finalPrice: number
   notes?: string
 }
+
+// -----------------------------------------------------------------------------
+// Workspace/Settings Types
+// -----------------------------------------------------------------------------
+
+export interface WorkspaceSettings {
+  id: string
+  name: string
+  subdomain: string
+  logo: string | null
+  countryCode: string
+  plan: string
+  status: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CountryConfig {
+  prefix: string
+  name: string
+  nameAr: string
+  flag: string
+  example: string
+}

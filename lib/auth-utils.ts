@@ -12,7 +12,7 @@ export function cleanCredentialsAndRedirect() {
     localStorage.removeItem("tenant_id");
 
     // Redirect to auth page
-    window.location.href = "/auth";
+    window.location.href = "/login";
   }
 }
 

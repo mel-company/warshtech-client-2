@@ -942,12 +942,39 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
   const handlePrint = async () => {
     setIsPrinting(true);
     try {
+      // Get logo: try tenant context first, then fetch from settings API
+      let logoUrl = tenant?.logo || null;
+      if (!logoUrl) {
+        try {
+          const settings = await apiClient.get<{ logo: string | null }>("/settings");
+          logoUrl = settings.logo;
+        } catch {
+          // Ignore settings fetch errors
+        }
+      }
+
+      // Convert logo URL to base64 data URI for react-pdf compatibility
+      let logoDataUri: string | null = null;
+      if (logoUrl) {
+        try {
+          const res = await fetch(logoUrl);
+          const logoBlob = await res.blob();
+          logoDataUri = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(logoBlob);
+          });
+        } catch {
+          // Ignore logo fetch errors
+        }
+      }
+
       const [{ pdf }, { InvoicePDF }] = await Promise.all([
         import("@react-pdf/renderer"),
         import("./invoice-pdf"),
       ]);
       const blob = await pdf(
-        React.createElement(InvoicePDF, { invoice, currency: t.currency.symbol, workshopName: tenant?.name || "" }) as any
+        React.createElement(InvoicePDF, { invoice, currency: t.currency.symbol, workshopName: tenant?.name || "", workshopLogo: logoDataUri }) as any
       ).toBlob();
       const url = URL.createObjectURL(blob);
       window.open(url, "_blank");

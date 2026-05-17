@@ -9,6 +9,8 @@ export interface TenantInfo {
   id: string;
   name: string;
   subdomain: string;
+  logo?: string | null;
+  countryCode?: string;
 }
 
 type AuthContextType = AuthState & {
