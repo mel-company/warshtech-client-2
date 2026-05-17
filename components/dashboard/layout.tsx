@@ -136,7 +136,7 @@ function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-3 px-2 py-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Logo size={28} />
+            <Logo size={32} />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold">{t.app.name}</span>
