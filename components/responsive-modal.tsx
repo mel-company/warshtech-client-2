@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { X } from 'lucide-react'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Dialog,
@@ -12,7 +13,6 @@ import {
 } from '@/components/ui/dialog'
 import {
   Drawer,
-  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -52,10 +52,20 @@ export function ResponsiveModal({
     return (
       <Drawer open={open} onOpenChange={onOpenChange} dismissible={dismissible}>
         <DrawerContent className={cn('max-h-[90vh]', className)}>
-          <DrawerHeader className="text-right" dir="rtl">
+          <DrawerHeader className="text-right relative" dir="rtl">
             <DrawerTitle className="text-right">{title}</DrawerTitle>
             {description && (
               <DrawerDescription className="text-right">{description}</DrawerDescription>
+            )}
+            {showCloseButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 left-2 h-8 w-8 rounded-full"
+                onClick={() => onOpenChange(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
             )}
           </DrawerHeader>
           <ScrollArea className="flex-1 overflow-auto px-4">
@@ -149,9 +159,17 @@ export function ConfirmDialog({
     return (
       <Drawer open={open} onOpenChange={onOpenChange} dismissible={dismissible}>
         <DrawerContent>
-          <DrawerHeader className="text-right" dir="rtl">
+          <DrawerHeader className="text-right relative" dir="rtl">
             <DrawerTitle className="text-right">{title}</DrawerTitle>
             <DrawerDescription className="text-right">{description}</DrawerDescription>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 left-2 h-8 w-8 rounded-full"
+              onClick={() => onOpenChange(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </DrawerHeader>
           <DrawerFooter className="flex-row-reverse gap-2">
             {buttons}
