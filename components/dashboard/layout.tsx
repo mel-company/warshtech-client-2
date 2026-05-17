@@ -53,6 +53,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import Logo from '@/assets/logo'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' as const, permission: null },
@@ -135,7 +136,7 @@ function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-3 px-2 py-3">
           <div className="flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Car className="size-5" />
+            <Logo size={28} />
           </div>
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold">{t.app.name}</span>
