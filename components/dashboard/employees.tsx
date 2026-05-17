@@ -82,7 +82,7 @@ function EmployeeForm({
     name: employee?.name || "",
     position: employee?.position || "technician",
     phone: employee?.phone || "",
-    salary: employee?.salary || 0,
+    salary: Number(employee?.salary) || 0,
     hireDate: employee?.hireDate || new Date(),
     isActive: employee?.isActive ?? true,
   });

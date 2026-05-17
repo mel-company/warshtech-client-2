@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   BarChart3,
   Barcode,
+  Info,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -40,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
 
 // =============================================================================
@@ -62,20 +64,22 @@ function ProductForm({
   const { t } = useTranslation();
   const [formData, setFormData] = React.useState<ProductFormData>({
     name: product?.name || "",
-    minPrice: product?.minPrice || 0,
-    costPrice: product?.costPrice || 0,
-    salePrice: product?.salePrice || 0,
+    minPrice: Number(product?.minPrice) || 0,
+    costPrice: Number(product?.costPrice) || 0,
+    salePrice: Number(product?.salePrice) || 0,
     photos: product?.photos || [],
     unit: product?.unit || "piece",
-    stock: product?.stock || 0,
-    minStock: product?.minStock || 0,
+    unitValue: Number(product?.unitValue) || 1,
+    unitAdjustable: product?.unitAdjustable || false,
+    stock: Number(product?.stock) || 0,
+    minStock: Number(product?.minStock) || 0,
     barcode: product?.barcode || "",
     description: product?.description || "",
   });
 
   const handleChange = (
     field: keyof ProductFormData,
-    value: string | number | ProductUnit,
+    value: string | number | boolean | ProductUnit,
   ) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
@@ -182,18 +186,22 @@ function ProductForm({
         </div>
       </div>
 
+
+
       {/* Stock */}
       <div className="grid gap-4 sm:grid-cols-3">
+
         <div className="space-y-2">
           <Label htmlFor="unit">{t.products.unit}</Label>
           <Select
             value={formData.unit}
             onValueChange={(value: ProductUnit) => handleChange("unit", value)}
+
           >
-            <SelectTrigger>
+            <SelectTrigger dir="rtl" className="w-full">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent dir="rtl">
               {units.map((unit) => (
                 <SelectItem key={unit} value={unit}>
                   {t.products.units[unit]}
@@ -201,7 +209,41 @@ function ProductForm({
               ))}
             </SelectContent>
           </Select>
+
         </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="unitValue">{t.products.unitValue}</Label>
+          <Input
+            id="unitValue"
+            type="number"
+            placeholder="3.5"
+            min={0.1}
+            step={0.1}
+            value={formData.unitValue}
+            onChange={(e) =>
+              handleChange("unitValue", parseFloat(e.target.value) || 1)
+            }
+
+          />
+        </div>
+
+        <div>
+          <div className="flex items-center gap-2 mt-6 justify-between">
+            <Label htmlFor="unitAdjustable" className="text-sm">{t.products.unitAdjustable}</Label>
+            <Switch
+              id="unitAdjustable"
+              checked={formData.unitAdjustable}
+              onCheckedChange={(checked) => handleChange("unitAdjustable", checked)}
+            />
+          </div>
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground mt-1.5 mb-2.5">
+            {/* <Info className="size-3.5 shrink-0 mt-0.5" /> */}
+            <span>{t.products.unitNote}</span>
+          </p>
+        </div>
+
+
         <div className="space-y-2">
           <Label htmlFor="stock">{t.products.stock}</Label>
           <Input
@@ -299,6 +341,9 @@ function ProductCard({ product, onEdit, onDelete, canWrite }: ProductCardProps) 
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold truncate">{product.name}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {Number(product.unitValue) || 1} {t.products.units[product.unit]}
+            </p>
             {product.barcode && (
               <p
                 className="text-xs text-muted-foreground flex items-center gap-1 mt-1"

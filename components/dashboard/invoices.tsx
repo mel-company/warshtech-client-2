@@ -171,10 +171,15 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
     invoice?.products?.map((p) => ({
       productId: p.productId,
       productName: p.product?.name || "",
-      quantity: p.quantity,
+      quantity: Number(p.quantity),
       unitPrice: Number(p.unitPrice),
       minPrice: Number(p.minPrice),
       unit: p.product?.unit || "",
+      unitValue: Number(p.quantity),
+      unitAdjustable: p.product?.unitAdjustable || false,
+      originalUnitValue: Number(p.product?.unitValue) || 1,
+      originalPrice: Number(p.unitPrice),
+      originalMinPrice: Number(p.minPrice),
     })) || [],
   );
   const [filteredServices, setFilteredServices] = React.useState<Service[]>([]);
@@ -207,12 +212,12 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
   // Calculate totals
   const totalServicesPrice = selectedServices.reduce((sum, s) => sum + s.price, 0);
   const totalProductsPrice = selectedProducts.reduce(
-    (sum, p) => sum + p.unitPrice * p.quantity,
+    (sum, p) => sum + p.unitPrice,
     0,
   );
   const totalPrice = totalServicesPrice + totalProductsPrice;
   const minPrice = selectedProducts.reduce(
-    (sum, p) => sum + p.minPrice * p.quantity,
+    (sum, p) => sum + p.minPrice,
     0,
   );
 
@@ -416,15 +421,21 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
   };
 
   const handleAddProduct = (product: Product) => {
+    const uv = Number(product.unitValue) || 1;
     setSelectedProducts([
       ...selectedProducts,
       {
         productId: product.id,
         productName: product.name,
-        quantity: 1,
+        quantity: uv,
         unitPrice: Number(product.salePrice),
         minPrice: Number(product.minPrice),
         unit: product.unit,
+        unitValue: uv,
+        unitAdjustable: product.unitAdjustable || false,
+        originalUnitValue: uv,
+        originalPrice: Number(product.salePrice),
+        originalMinPrice: Number(product.minPrice),
       },
     ]);
     setProductSearch("");
@@ -434,13 +445,23 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
   const handleRemoveProduct = (index: number) =>
     setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
 
-  const handleProductChange = (
-    index: number,
-    field: "quantity" | "unitPrice",
-    value: number,
-  ) => {
+  const handleProductUnitValueChange = (index: number, newUnitValue: number) => {
     const updated = [...selectedProducts];
-    updated[index] = { ...updated[index], [field]: value };
+    const p = updated[index];
+    const ratio = newUnitValue / p.originalUnitValue;
+    updated[index] = {
+      ...p,
+      unitValue: newUnitValue,
+      quantity: newUnitValue,
+      unitPrice: Math.round(p.originalPrice * ratio),
+      minPrice: Math.round(p.originalMinPrice * ratio),
+    };
+    setSelectedProducts(updated);
+  };
+
+  const handleProductPriceChange = (index: number, newPrice: number) => {
+    const updated = [...selectedProducts];
+    updated[index] = { ...updated[index], unitPrice: newPrice };
     setSelectedProducts(updated);
   };
 
@@ -705,7 +726,9 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
                 >
                   <div>
                     <span>{product.name}</span>
-                    <span className="mx-2 text-muted-foreground text-xs">({product.stock} متوفر)</span>
+                    <span className="mx-2 text-muted-foreground text-xs">
+                      ({Number(product.unitValue) || 1} {t.products.units[product.unit as keyof typeof t.products.units] || product.unit})
+                    </span>
                   </div>
                   <Badge variant="secondary">{Number(product.salePrice)} {t.currency.symbol}</Badge>
                 </button>
@@ -719,37 +742,43 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
         ) : (
           <div className="space-y-2">
             {selectedProducts.map((product, index) => (
-              <div key={product.productId} className="flex items-center gap-2 rounded-lg border p-3">
-                <Package className="size-4 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{product.productName}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {product.unit}
-                  </p>
+              <div key={product.productId} className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Package className="size-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm font-medium truncate flex-1">{product.productName}</span>
+                  <Button type="button" variant="ghost" size="icon" className="size-7 text-destructive shrink-0" onClick={() => handleRemoveProduct(index)}>
+                    <X className="size-4" />
+                  </Button>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Input
-                    type="number"
-                    value={product.quantity}
-                    onChange={(e) => handleProductChange(index, "quantity", Math.max(1, Number(e.target.value)))}
-                    className="w-16 text-center"
-                    min={1}
-                  />
-                  <span className="text-xs text-muted-foreground">×</span>
+                <div className="flex items-center gap-2">
+                  {product.unitAdjustable ? (
+                    <div className="flex items-center gap-1 flex-1">
+                      <Input
+                        type="number"
+                        value={product.unitValue}
+                        onChange={(e) => handleProductUnitValueChange(index, Math.max(0.01, Number(e.target.value)))}
+                        className="w-20 text-center"
+                        min={0.01}
+                        step={0.1}
+                      />
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {t.products.units[product.unit as keyof typeof t.products.units] || product.unit}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-muted-foreground flex-1">
+                      {product.unitValue} {t.products.units[product.unit as keyof typeof t.products.units] || product.unit}
+                    </span>
+                  )}
                   <Input
                     type="number"
                     value={product.unitPrice}
-                    onChange={(e) => handleProductChange(index, "unitPrice", Number(e.target.value))}
-                    className="w-20 text-center"
+                    onChange={(e) => handleProductPriceChange(index, Number(e.target.value))}
+                    className="w-24 text-center"
                     min={0}
                   />
+                  <span className="text-xs text-muted-foreground shrink-0">{t.currency.symbol}</span>
                 </div>
-                <span className="text-sm font-medium w-20 text-end shrink-0">
-                  {(product.unitPrice * product.quantity).toFixed(0)} {t.currency.symbol}
-                </span>
-                <Button type="button" variant="ghost" size="icon" className="size-7 text-destructive shrink-0" onClick={() => handleRemoveProduct(index)}>
-                  <X className="size-4" />
-                </Button>
               </div>
             ))}
           </div>
@@ -792,8 +821,8 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider pt-1">{t.invoices.products}</p>
             {selectedProducts.map((p) => (
               <div key={p.productId} className="flex justify-between text-sm">
-                <span>{p.productName} × {p.quantity}</span>
-                <span>{(p.unitPrice * p.quantity).toFixed(0)} {t.currency.symbol}</span>
+                <span>{p.productName} — {p.unitValue} {t.products.units[p.unit as keyof typeof t.products.units] || p.unit}</span>
+                <span>{p.unitPrice.toFixed(0)} {t.currency.symbol}</span>
               </div>
             ))}
           </>
@@ -924,7 +953,7 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
             {invoice.products.map((p) => (
               <div key={p.id} className="flex justify-between text-sm py-1">
                 <span>
-                  {p.product.name} × {p.quantity}
+                  {p.product.name} — {Number(p.quantity)} {t.products.units[p.product.unit as keyof typeof t.products.units] || p.product.unit}
                 </span>
                 <span>{Number(p.total)} {t.currency.symbol}</span>
               </div>

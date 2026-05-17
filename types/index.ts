@@ -48,6 +48,8 @@ export interface Product {
   salePrice: number
   photos: string[]
   unit: ProductUnit
+  unitValue: number
+  unitAdjustable: boolean
   stock: number
   minStock: number
   barcode?: string
@@ -208,6 +210,8 @@ export interface ProductFormData {
   salePrice: number
   photos: string[]
   unit: ProductUnit
+  unitValue: number
+  unitAdjustable: boolean
   stock: number
   minStock: number
   barcode?: string
@@ -261,6 +265,8 @@ export interface InvoiceProduct {
     id: string
     name: string
     unit: string
+    unitValue: number
+    unitAdjustable: boolean
   }
 }
 
@@ -310,6 +316,11 @@ export interface InvoiceFormProduct {
   unitPrice: number
   minPrice: number
   unit: string
+  unitValue: number
+  unitAdjustable: boolean
+  originalUnitValue: number
+  originalPrice: number
+  originalMinPrice: number
 }
 
 export interface InvoiceFormService {

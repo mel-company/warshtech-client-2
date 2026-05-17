@@ -102,10 +102,10 @@ function ServiceForm({
   const { t } = useTranslation();
   const [formData, setFormData] = React.useState<ServiceFormData>({
     name: service?.name || "",
-    price: service?.price || 0,
+    price: Number(service?.price) || 0,
     icon: service?.icon || "Wrench",
     description: service?.description || "",
-    estimatedDuration: service?.estimatedDuration || 30,
+    estimatedDuration: Number(service?.estimatedDuration) || 30,
     isActive: service?.isActive ?? true,
   });
 
