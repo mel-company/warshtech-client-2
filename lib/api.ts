@@ -171,27 +171,32 @@ export const apiClient = {
     withErrorHandling(api<T>(endpoint, { ...options, method: "DELETE" })),
 };
 
-// Upload a file using presigned URL
+// Upload via Next.js proxy to avoid browser CORS on direct R2 PUT
 export async function uploadFile(file: File, key: string): Promise<string> {
-  // Get presigned URL from server
-  const { url, publicUrl } = await apiClient.post<{ url: string; publicUrl: string }>(
-    "/upload/presigned-url",
-    { key, contentType: file.type }
-  );
+  const accessToken =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const tenantId = getTenantId();
 
-  // Upload file directly to R2 using presigned URL
-  const response = await fetch(url, {
-    method: "PUT",
-    body: file,
-    headers: {
-      "Content-Type": file.type,
-    },
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("key", key);
+
+  const headers: Record<string, string> = {};
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+  if (tenantId) headers["x-tenant-id"] = tenantId;
+
+  const response = await fetch("/api/upload", {
+    method: "POST",
+    body: formData,
+    headers,
   });
 
   if (!response.ok) {
-    throw new Error("Failed to upload file");
+    const error = await response.json().catch(() => ({ message: "Failed to upload file" }));
+    throw new Error(error.message || "Failed to upload file");
   }
 
+  const { publicUrl } = (await response.json()) as { publicUrl: string };
   return publicUrl;
 }
 

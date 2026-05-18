@@ -44,7 +44,66 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from "@/components/ui/toggle-group";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
+
+// =============================================================================
+// Pricing helpers
+// =============================================================================
+
+function marginFromPrices(cost: number, price: number): number {
+  if (cost <= 0 || price <= 0) return 0;
+  return Math.round(((price / cost - 1) * 100) * 100) / 100;
+}
+
+function minPriceFromSaleDiscount(
+  sale: number,
+  cost: number,
+  discountPercentOnProfit: number,
+): number {
+  if (sale <= 0) return 0;
+  const profit = sale - cost;
+  if (profit <= 0) return 0;
+  return Math.round(sale - profit * (discountPercentOnProfit / 100));
+}
+
+function discountPercentOnProfit(
+  sale: number,
+  cost: number,
+  minPrice: number,
+): number {
+  const profit = sale - cost;
+  if (profit <= 0 || minPrice >= sale) return 0;
+  return Math.round(((sale - minPrice) / profit) * 100 * 100) / 100;
+}
+
+const MIN_MARGIN_OPTIONS = [10, 15, 20] as const;
+type MinMarginOption = (typeof MIN_MARGIN_OPTIONS)[number];
+
+function pickClosestMinMargin(
+  sale: number,
+  cost: number,
+  minPrice: number,
+): MinMarginOption {
+  const actual = discountPercentOnProfit(sale, cost, minPrice);
+  if (actual <= 0) return 10;
+  return MIN_MARGIN_OPTIONS.reduce((best, opt) =>
+    Math.abs(opt - actual) < Math.abs(best - actual) ? opt : best,
+  );
+}
+
+function isMinMarginValid(
+  cost: number,
+  sale: number,
+  marginPercent: number,
+): boolean {
+  if (cost <= 0 || sale <= cost) return false;
+  const min = minPriceFromSaleDiscount(sale, cost, marginPercent);
+  return min > cost && min < sale;
+}
 
 // =============================================================================
 // Product Form Component
@@ -64,11 +123,30 @@ function ProductForm({
   isLoading,
 }: ProductFormProps) {
   const { t } = useTranslation();
+  const initialCost = Number(product?.costPrice) || 0;
+  const initialSale = Number(product?.salePrice) || 0;
+  const initialMin = Number(product?.minPrice) || 0;
+
+  const hasValidMinPrice =
+    initialSale > initialCost &&
+    initialMin > initialCost &&
+    initialMin < initialSale;
+
+  const [minPriceEnabled, setMinPriceEnabled] = React.useState(hasValidMinPrice);
+
+  const [selectedMinMargin, setSelectedMinMargin] =
+    React.useState<MinMarginOption | null>(() => {
+      if (hasValidMinPrice) {
+        return pickClosestMinMargin(initialSale, initialCost, initialMin);
+      }
+      return null;
+    });
+
   const [formData, setFormData] = React.useState<ProductFormData>({
     name: product?.name || "",
-    minPrice: Number(product?.minPrice) || 0,
-    costPrice: Number(product?.costPrice) || 0,
-    salePrice: Number(product?.salePrice) || 0,
+    minPrice: initialMin,
+    costPrice: initialCost,
+    salePrice: initialSale,
     photos: product?.photos || [],
     unit: product?.unit || "piece",
     unitValue: Number(product?.unitValue) || 1,
@@ -79,6 +157,91 @@ function ProductForm({
     description: product?.description || "",
   });
   const [isUploading, setIsUploading] = React.useState(false);
+
+  const profitMargin = marginFromPrices(
+    formData.costPrice,
+    formData.salePrice,
+  );
+
+  const resolveMinPrice = (
+    enabled: boolean,
+    cost: number,
+    sale: number,
+    margin: MinMarginOption | null,
+  ): number => {
+    if (!enabled) return sale;
+    if (margin === null || !isMinMarginValid(cost, sale, margin)) return 0;
+    return minPriceFromSaleDiscount(sale, cost, margin);
+  };
+
+  const handleCostChange = (cost: number) => {
+    const sale = formData.salePrice;
+    let margin = selectedMinMargin;
+    if (
+      minPriceEnabled &&
+      margin !== null &&
+      !isMinMarginValid(cost, sale, margin)
+    ) {
+      margin = null;
+    }
+    if (minPriceEnabled) setSelectedMinMargin(margin);
+    setFormData((prev) => ({
+      ...prev,
+      costPrice: cost,
+      minPrice: resolveMinPrice(minPriceEnabled, cost, sale, margin),
+    }));
+  };
+
+  const handleSaleChange = (sale: number) => {
+    const cost = formData.costPrice;
+    let margin = selectedMinMargin;
+    if (
+      minPriceEnabled &&
+      margin !== null &&
+      !isMinMarginValid(cost, sale, margin)
+    ) {
+      margin = null;
+    }
+    if (minPriceEnabled) setSelectedMinMargin(margin);
+    setFormData((prev) => ({
+      ...prev,
+      salePrice: sale,
+      minPrice: resolveMinPrice(minPriceEnabled, cost, sale, margin),
+    }));
+  };
+
+  const handleMinPriceToggle = (enabled: boolean) => {
+    setMinPriceEnabled(enabled);
+    const cost = formData.costPrice;
+    const sale = formData.salePrice;
+
+    if (!enabled) {
+      setFormData((prev) => ({ ...prev, minPrice: prev.salePrice }));
+      return;
+    }
+
+    let margin: MinMarginOption | null = selectedMinMargin ?? 10;
+    if (!isMinMarginValid(cost, sale, margin)) {
+      margin =
+        MIN_MARGIN_OPTIONS.find((m) => isMinMarginValid(cost, sale, m)) ?? null;
+    }
+    setSelectedMinMargin(margin);
+    setFormData((prev) => ({
+      ...prev,
+      minPrice: resolveMinPrice(true, cost, sale, margin),
+    }));
+  };
+
+  const handleMinMarginSelect = (margin: MinMarginOption) => {
+    const cost = formData.costPrice;
+    const sale = formData.salePrice;
+    if (!minPriceEnabled || !isMinMarginValid(cost, sale, margin)) return;
+    setSelectedMinMargin(margin);
+    setFormData((prev) => ({
+      ...prev,
+      minPrice: minPriceFromSaleDiscount(sale, cost, margin),
+    }));
+  };
 
   const handleChange = (
     field: keyof ProductFormData,
@@ -189,11 +352,29 @@ function ProductForm({
       toast.error(t.validation.required);
       return;
     }
-    if (formData.salePrice < formData.costPrice) {
-      toast.error("سعر البيع يجب أن يكون أكبر من سعر التكلفة");
+    if (formData.salePrice <= formData.costPrice) {
+      toast.error(t.products.validation.saleBelowCost);
       return;
     }
-    onSubmit(formData);
+    if (minPriceEnabled) {
+      if (selectedMinMargin === null) {
+        toast.error(t.products.validation.minMarginRequired);
+        return;
+      }
+      if (formData.minPrice <= formData.costPrice) {
+        toast.error(t.products.validation.minBelowCost);
+        return;
+      }
+      if (formData.minPrice >= formData.salePrice) {
+        toast.error(t.products.validation.minAboveSale);
+        return;
+      }
+    }
+
+    onSubmit({
+      ...formData,
+      minPrice: minPriceEnabled ? formData.minPrice : formData.salePrice,
+    });
   };
 
   const units: ProductUnit[] = [
@@ -307,7 +488,9 @@ function ProductForm({
       </div>
 
       {/* Pricing */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="space-y-4">
+        <p className="text-xs text-muted-foreground">{t.products.pricingHint}</p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="costPrice">{t.products.costPrice}</Label>
           <Input
@@ -315,22 +498,9 @@ function ProductForm({
             type="number"
             min={0}
             step={1000}
-            value={formData.costPrice}
+            value={formData.costPrice || ""}
             onChange={(e) =>
-              handleChange("costPrice", parseFloat(e.target.value) || 0)
-            }
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="minPrice">{t.products.minPrice}</Label>
-          <Input
-            id="minPrice"
-            type="number"
-            min={0}
-            step={1000}
-            value={formData.minPrice}
-            onChange={(e) =>
-              handleChange("minPrice", parseFloat(e.target.value) || 0)
+              handleCostChange(parseFloat(e.target.value) || 0)
             }
           />
         </div>
@@ -341,15 +511,103 @@ function ProductForm({
             type="number"
             min={0}
             step={1000}
-            value={formData.salePrice}
+            value={formData.salePrice || ""}
             onChange={(e) =>
-              handleChange("salePrice", parseFloat(e.target.value) || 0)
+              handleSaleChange(parseFloat(e.target.value) || 0)
             }
           />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="profitMargin">{t.products.profitMargin}</Label>
+          <Input
+            id="profitMargin"
+            type="text"
+            readOnly
+            tabIndex={-1}
+            className="bg-muted"
+            value={profitMargin > 0 ? `${profitMargin}%` : "—"}
+          />
+        </div>
+        </div>
+
+        <div className="space-y-4 rounded-lg border p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="minPriceEnabled" className="text-base">
+                {t.products.minPriceEnabled}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t.products.minMarginDiscountHint}
+              </p>
+            </div>
+            <Switch
+              id="minPriceEnabled"
+              checked={minPriceEnabled}
+              onCheckedChange={handleMinPriceToggle}
+            />
+          </div>
+
+          {minPriceEnabled && (
+            <div className="space-y-3 border-t pt-3">
+              <Label>{t.products.selectMinMargin}</Label>
+              <ToggleGroup
+                type="single"
+                variant="outline"
+                className="flex flex-wrap justify-start gap-2"
+                value={
+                  selectedMinMargin !== null ? String(selectedMinMargin) : ""
+                }
+                onValueChange={(value) => {
+                  if (value) {
+                    handleMinMarginSelect(Number(value) as MinMarginOption);
+                  }
+                }}
+              >
+                {MIN_MARGIN_OPTIONS.map((percent) => {
+                  const minForOption = minPriceFromSaleDiscount(
+                    formData.salePrice,
+                    formData.costPrice,
+                    percent,
+                  );
+                  const disabled = !isMinMarginValid(
+                    formData.costPrice,
+                    formData.salePrice,
+                    percent,
+                  );
+                  return (
+                    <ToggleGroupItem
+                      key={percent}
+                      value={String(percent)}
+                      disabled={disabled}
+                      className="min-w-28 px-4"
+                      aria-label={`${percent}%`}
+                    >
+                      {percent}%
+                      {formData.salePrice > formData.costPrice && !disabled && (
+                        <span className="ms-1 text-xs text-muted-foreground">
+                          ({minForOption.toLocaleString()} {t.currency.symbol})
+                        </span>
+                      )}
+                    </ToggleGroupItem>
+                  );
+                })}
+              </ToggleGroup>
+              <div className="space-y-2">
+                <Label htmlFor="minPrice">{t.products.minPrice}</Label>
+                <Input
+                  id="minPrice"
+                  type="number"
+                  readOnly
+                  tabIndex={-1}
+                  className="bg-muted"
+                  value={formData.minPrice || ""}
+                  placeholder="—"
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-
-
 
       {/* Stock */}
       <div className="grid gap-4 sm:grid-cols-3">
