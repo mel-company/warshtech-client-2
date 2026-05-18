@@ -34,6 +34,7 @@ export const en = {
     roles: "Roles & Permissions",
     invoices: "Invoices",
     pos: "Point of Sale",
+    activeService: "In Workshop",
     reports: "Reports",
     settings: "Settings",
     logout: "Logout",
@@ -285,6 +286,22 @@ export const en = {
     registerSuccess: "Account created successfully",
   },
 
+  activeService: {
+    title: "In Workshop",
+    subtitle: "Customers currently in service — pending invoices",
+    searchPlaceholder: "Search by name, phone, car, or service...",
+    empty: "No customers in workshop right now",
+    emptyHint:
+      "When you complete a sale at POS, the invoice appears here until service is finished",
+    services: "Services",
+    productsCount: "{count} product(s)",
+    markDone: "Finish service",
+    completed: "Service marked as completed",
+    confirmTitle: "Finish service?",
+    confirmDescription:
+      "Invoice for {name} will be marked completed and removed from this list.",
+  },
+
   pos: {
     title: "Point of Sale",
     cart: "Cart",
@@ -299,6 +316,8 @@ export const en = {
     ready: "Ready",
     required: "Required",
     accountantOnly: "This page is for accountants only",
+    catalogEmpty:
+      "No products or services found — add them from the dashboard (admin account)",
   },
 
   invoices: {

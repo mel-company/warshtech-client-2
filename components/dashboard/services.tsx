@@ -28,6 +28,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { Service, ServiceFormData } from "@/types";
 import apiClient from "@/lib/api";
+import { extractListData } from "@/lib/list-response";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -404,9 +405,9 @@ export function ServicesPage() {
     try {
       setIsFetching(true);
       const response = await apiClient.get<{ data: Service[]; total: number }>(
-        "/services",
+        "/services?take=500",
       );
-      setServices(response.data || []);
+      setServices(extractListData(response));
     } catch (error) {
       console.error("Failed to fetch services:", error);
       toast.error(t.messages.error.general);

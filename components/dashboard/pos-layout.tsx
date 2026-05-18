@@ -2,7 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LogOut, Moon, Sun } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LogOut, Moon, Sun, ShoppingCart, ClipboardList } from "lucide-react";
 import { useTheme } from "next-themes";
 
 import { useTranslation } from "@/lib/i18n";
@@ -36,6 +38,7 @@ export function PosLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
   const { user, logout, isLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
   React.useEffect(() => {
     if (isLoading) return;
     if (!user) {
@@ -70,10 +73,43 @@ export function PosLayout({ children }: { children: React.ReactNode }) {
               <Logo size={28} />
             </div>
             <div>
-              <p className="text-sm font-bold leading-none">{t.pos.title}</p>
+              <p className="text-sm font-bold leading-none">
+                {pathname.startsWith("/dashboard/active-service")
+                  ? t.nav.activeService
+                  : t.pos.title}
+              </p>
               <p className="text-xs text-muted-foreground">{t.app.name}</p>
             </div>
           </div>
+
+          <nav className="flex items-center gap-1 rounded-lg border bg-card/80 p-0.5">
+            <Button
+              variant={pathname.startsWith("/dashboard/pos") ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 gap-1.5 px-2.5"
+              asChild
+            >
+              <Link href="/dashboard/pos">
+                <ShoppingCart className="size-4" />
+                <span className="hidden sm:inline">{t.nav.pos}</span>
+              </Link>
+            </Button>
+            <Button
+              variant={
+                pathname.startsWith("/dashboard/active-service")
+                  ? "secondary"
+                  : "ghost"
+              }
+              size="sm"
+              className="h-8 gap-1.5 px-2.5"
+              asChild
+            >
+              <Link href="/dashboard/active-service">
+                <ClipboardList className="size-4" />
+                <span className="hidden sm:inline">{t.nav.activeService}</span>
+              </Link>
+            </Button>
+          </nav>
 
           <div className="flex items-center gap-2">
             <ThemeToggle />

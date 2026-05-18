@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import apiClient from "@/lib/api";
+import { extractListData } from "@/lib/list-response";
 import { resolveCustomerAndCar } from "@/lib/checkout";
 import type {
   Car as CarType,
@@ -71,13 +72,23 @@ export function PosPage() {
     const load = async () => {
       try {
         const [productsRes, servicesRes] = await Promise.all([
-          apiClient.get<{ data: Product[] }>("/products?take=200"),
-          apiClient.get<{ data: Service[] }>("/services?take=200"),
+          apiClient.get<{ data: Product[] }>("/products?take=500"),
+          apiClient.get<{ data: Service[] }>("/services?take=500"),
         ]);
-        setProducts(productsRes.data || []);
-        setServices((servicesRes.data || []).filter((s) => s.isActive));
-      } catch {
-        toast.error(t.messages.error.fetchFailed);
+        const productList = extractListData(productsRes);
+        const serviceList = extractListData(servicesRes).filter(
+          (s) => s.isActive !== false,
+        );
+        setProducts(productList);
+        setServices(serviceList);
+        if (productList.length === 0 && serviceList.length === 0) {
+          toast.message(t.pos.catalogEmpty);
+        }
+      } catch (error) {
+        console.error("POS catalog load failed:", error);
+        const msg =
+          error instanceof Error ? error.message : t.messages.error.fetchFailed;
+        toast.error(msg);
       } finally {
         setIsLoadingCatalog(false);
       }

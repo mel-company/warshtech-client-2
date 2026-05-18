@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import apiClient from "@/lib/api";
+import { extractListData } from "@/lib/list-response";
 import type { Product } from "@/types";
 import type { Invoice } from "@/types";
 import {
@@ -319,7 +320,7 @@ export function DashboardHome() {
         await Promise.all([
           apiClient.get<DashboardStats>("/dashboard"),
           apiClient
-            .get<{ data: Product[] }>("/products")
+            .get<{ data: Product[] }>("/products?take=500")
             .catch(() => ({ data: [] as Product[] })),
           apiClient
             .get<{ data: Invoice[] }>("/invoices?take=100")
@@ -332,15 +333,17 @@ export function DashboardHome() {
                 price: number;
                 isActive: boolean;
               }>;
-            }>("/services")
+            }>("/services?take=500")
             .catch(() => ({ data: [] })),
         ]);
 
       setStats(dashboardRes);
-      setProducts(productsRes.data || []);
-      setInvoices(invoicesRes.data || []);
+      setProducts(extractListData(productsRes));
+      setInvoices(extractListData(invoicesRes));
       setServices(
-        (servicesRes.data || []).filter((s) => s.isActive).slice(0, 6),
+        extractListData(servicesRes)
+          .filter((s) => s.isActive !== false)
+          .slice(0, 6),
       );
     } catch (error) {
       console.error("Failed to fetch dashboard:", error);

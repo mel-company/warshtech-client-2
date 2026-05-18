@@ -21,6 +21,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { Product, ProductUnit, ProductFormData } from "@/types";
 import apiClient, { uploadFile } from "@/lib/api";
+import { extractListData } from "@/lib/list-response";
 import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -852,9 +853,9 @@ export function ProductsPage() {
     try {
       setIsFetching(true);
       const response = await apiClient.get<{ data: Product[]; total: number }>(
-        "/products",
+        "/products?take=500",
       );
-      setProducts(response.data || []);
+      setProducts(extractListData(response));
     } catch (error) {
       console.error("Failed to fetch products:", error);
       toast.error(t.messages.error.general);

@@ -18,6 +18,7 @@ import {
   ChevronLeft,
   Menu,
   FileText,
+  ClipboardList,
 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 
@@ -65,6 +66,7 @@ const navItems = [
   { href: '/dashboard/employees', icon: UserCog, labelKey: 'employees' as const, permission: 'employees' as const },
   { href: '/dashboard/users', icon: Shield, labelKey: 'users' as const, permission: 'users' as const },
   { href: '/dashboard/invoices', icon: FileText, labelKey: 'invoices' as const, permission: 'invoices' as const },
+  { href: '/dashboard/active-service', icon: ClipboardList, labelKey: 'activeService' as const, permission: 'invoices' as const },
   { href: '/dashboard/roles', icon: Shield, labelKey: 'roles' as const, permission: 'roles' as const },
 ]
 
@@ -241,6 +243,7 @@ function DashboardHeader() {
     if (pathname.includes('/employees')) return t.nav.employees
     if (pathname.includes('/users')) return t.nav.users
     if (pathname.includes('/invoices')) return t.nav.invoices
+    if (pathname.includes('/active-service')) return t.nav.activeService
     if (pathname.includes('/pos')) return t.nav.pos
     if (pathname.includes('/roles')) return t.nav.roles
     if (pathname.includes('/settings')) return t.nav.settings
@@ -270,12 +273,19 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (isLoading || !user) return
-    if (isAccountantUser(user) && !pathname.startsWith('/dashboard/pos')) {
+    const accountantPaths = ['/dashboard/pos', '/dashboard/active-service']
+    if (
+      isAccountantUser(user) &&
+      !accountantPaths.some((p) => pathname.startsWith(p))
+    ) {
       router.replace('/dashboard/pos')
     }
   }, [user, isLoading, pathname, router])
 
-  if (pathname.startsWith('/dashboard/pos')) {
+  if (
+    pathname.startsWith('/dashboard/pos') ||
+    pathname.startsWith('/dashboard/active-service')
+  ) {
     return <PosLayout>{children}</PosLayout>
   }
 

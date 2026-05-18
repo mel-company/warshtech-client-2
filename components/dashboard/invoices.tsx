@@ -41,6 +41,7 @@ import type {
   Service,
 } from "@/types";
 import apiClient from "@/lib/api";
+import { extractListData } from "@/lib/list-response";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -200,11 +201,11 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
     const loadData = async () => {
       try {
         const [servicesRes, productsRes] = await Promise.all([
-          apiClient.get<{ data: Service[] }>("/services?take=100"),
-          apiClient.get<{ data: Product[] }>("/products?take=100"),
+          apiClient.get<{ data: Service[] }>("/services?take=500"),
+          apiClient.get<{ data: Product[] }>("/products?take=500"),
         ]);
-        setAvailableServices(servicesRes.data || []);
-        setAvailableProducts(productsRes.data || []);
+        setAvailableServices(extractListData(servicesRes));
+        setAvailableProducts(extractListData(productsRes));
       } catch {
         toast.error(t.messages.error.fetchFailed);
       }
