@@ -19,8 +19,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-import apiClient from "@/lib/api";
-import { extractListData } from "@/lib/list-response";
+import { fetchActiveInvoices, updateInvoiceStatus } from "@/lib/reception-api";
 import type { Invoice } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -75,10 +74,7 @@ export function ActiveServicePage() {
   const load = React.useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await apiClient.get<{ data: Invoice[] }>(
-        "/invoices?status=PENDING&take=500",
-      );
-      setInvoices(extractListData(res));
+      setInvoices(await fetchActiveInvoices());
     } catch (error) {
       console.error("Failed to load active service queue:", error);
       toast.error(t.messages.error.fetchFailed);
@@ -116,9 +112,7 @@ export function ActiveServicePage() {
     if (!canWrite) return;
     setCompletingId(invoice.id);
     try {
-      await apiClient.patch(`/invoices/${invoice.id}/status`, {
-        status: "COMPLETED",
-      });
+      await updateInvoiceStatus(invoice.id, "COMPLETED");
       toast.success(t.activeService.completed);
       setConfirmInvoice(null);
       await load();

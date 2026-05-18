@@ -44,9 +44,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
+import { PermissionGrid } from "@/components/dashboard/permission-grid";
+import {
+  RECEPTIONIST_PERMISSIONS,
+  RECEPTIONIST_ROLE_NAMES,
+} from "@/lib/reception-permissions";
 
 // =============================================================================
-// Permission Grid Component (reused from users.tsx)
+// Legacy permission grid (unused — see permission-grid.tsx)
 // =============================================================================
 
 interface PermissionGridProps {
@@ -89,7 +94,7 @@ const resourcePermissionMap: Record<
   settings: { read: "SETTINGS_READ", write: "SETTINGS_WRITE" },
 };
 
-function PermissionGrid({
+function _LegacyPermissionGridUnused({
   permissions,
   onChange,
   readonly = false,
@@ -348,6 +353,31 @@ export function RolesPage() {
     return permissions.length;
   };
 
+  const handleCreateReceptionistRole = async () => {
+    const roleName = RECEPTIONIST_ROLE_NAMES[0];
+    const exists = roles.some(
+      (r) => r.name.toLowerCase() === roleName.toLowerCase(),
+    );
+    if (exists) {
+      toast.message(t.users.permissions.receptionRoleExists);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const result = await apiClient.post<Role>("/roles", {
+        name: roleName,
+        permissions: RECEPTIONIST_PERMISSIONS,
+      });
+      setRoles((prev) => [result, ...prev]);
+      toast.success(t.users.permissions.receptionRoleCreated);
+    } catch (error) {
+      console.error("Failed to create receptionist role:", error);
+      toast.error(t.messages.error.saveFailed);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -357,10 +387,20 @@ export function RolesPage() {
           <p className="text-muted-foreground">إدارة الأدوار وصلاحيات الوصول</p>
         </div>
         {hasAccess && canWrite && (
-          <Button onClick={handleAddNew}>
-            <Plus className="ml-1 size-4" />
-            إضافة دور جديد
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => void handleCreateReceptionistRole()}
+              disabled={isLoading}
+            >
+              <Shield className="ml-1 size-4" />
+              {t.users.permissions.createReceptionRole}
+            </Button>
+            <Button onClick={handleAddNew}>
+              <Plus className="ml-1 size-4" />
+              إضافة دور جديد
+            </Button>
+          </div>
         )}
       </div>
 

@@ -44,6 +44,7 @@ export const ar = {
     invoices: "الفواتير",
     pos: "نقطة البيع",
     activeService: "تحت الصيانة",
+    reception: "الاستقبال",
     reports: "التقارير",
     settings: "الإعدادات",
     logout: "تسجيل الخروج",
@@ -251,6 +252,7 @@ export const ar = {
       manager: "مدير",
       cashier: "كاشير",
       accountant: "محاسب",
+      receptionist: "موظف استقبال",
       viewer: "مشاهد",
     },
     permissions: {
@@ -263,6 +265,12 @@ export const ar = {
       employees: "الموظفين",
       users: "المستخدمين",
       invoices: "الفواتير",
+      reception: "استقبال السيارات",
+      receptionHint:
+        "عملاء + منتجات + خدمات + فواتير (تسجيل دخول السيارة للخدمة)",
+      createReceptionRole: "إنشاء دور موظف استقبال",
+      receptionRoleCreated: "تم إنشاء دور موظف الاستقبال",
+      receptionRoleExists: "دور موظف الاستقبال موجود مسبقاً",
       settings: "الإعدادات",
       none: "بدون صلاحية",
       read: "قراءة فقط",
@@ -326,6 +334,33 @@ export const ar = {
   // ---------------------------------------------------------------------------
   // Invoices
   // ---------------------------------------------------------------------------
+  reception: {
+    title: "استقبال السيارات",
+    intakeTitle: "بيانات الزبون والسيارة",
+    lookup: "بحث / تسجيل",
+    lookupDone: "تم تحميل البيانات",
+    knownCustomer: "زبون مسجّل مسبقاً",
+    searchingCustomer: "جاري جلب بيانات الزبون...",
+    selectCar: "اختر السيارة",
+    carsRegistered: "{count} سيارة مسجّلة",
+    customerLoaded: "تم تحميل بيانات الزبون وسياراته",
+    needPhoneMin: "أدخل 4 أرقام على الأقل من رقم الهاتف",
+    needPhoneAndPlate: "أدخل رقم الهاتف ورقم اللوحة",
+    history: "الفواتير السابقة",
+    noHistory: "لا توجد فواتير سابقة",
+    openJobLoaded: "تم تحميل أمر الخدمة المفتوح",
+    currentJob: "أمر الخدمة الحالي",
+    addItemsTitle: "الخدمات والمنتجات",
+    startWithLookup: "ابدأ بالبحث عن الزبون والسيارة",
+    needItems: "أضف خدمة أو منتج واحد على الأقل",
+    register: "تسجيل للخدمة",
+    toGarage: "إرسال للكراج",
+    finish: "إنهاء الخدمة",
+    registered: "تم تسجيل السيارة للخدمة",
+    sentToGarage: "تم إرسال السيارة للكراج",
+    completed: "تم إنهاء الخدمة",
+  },
+
   activeService: {
     title: "تحت الصيانة",
     subtitle: "الزبائن قيد الخدمة — فواتير بحالة «قيد الانتظار»",
@@ -394,7 +429,8 @@ export const ar = {
     total: "الإجمالي",
     priceBelowMin: "السعر النهائي لا يمكن أن يكون أقل من الحد الأدنى",
     statuses: {
-      PENDING: "معلقة",
+      IN_SERVICE: "في الكراج",
+      PENDING: "في الاستقبال",
       COMPLETED: "مكتملة",
       CANCELLED: "ملغية",
     },

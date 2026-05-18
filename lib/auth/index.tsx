@@ -4,6 +4,10 @@ import * as React from "react";
 import type { AuthUser, AuthState } from "@/types";
 import { apiClient, setTenantId, clearTenantId } from "@/lib/api";
 import { cleanCredentialsAndRedirect } from "@/lib/auth-utils";
+import {
+  hasReceptionistPermissions,
+  hasReceptionistReadAccess,
+} from "@/lib/reception-permissions";
 
 export interface TenantInfo {
   id: string;
@@ -227,6 +231,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Owner users have unlimited access (unchangeable role for workshop creator)
       if (state.user.role === 'Owner') {
+        return true;
+      }
+
+      const position = (state.user.position || "").toLowerCase();
+      const role = (state.user.role || "").toLowerCase();
+      const isAccountant =
+        position === "accountant" ||
+        role === "accountant" ||
+        role.includes("محاسب");
+      const isReceptionist =
+        position === "receptionist" ||
+        role === "receptionist" ||
+        role.includes("استقبال");
+
+      if (resource === "reception") {
+        const perms = state.user.permissions;
+        if (level === "write") return hasReceptionistPermissions(perms);
+        return hasReceptionistReadAccess(perms);
+      }
+
+      const staffResources = ["customers", "products", "services", "invoices"];
+      if (
+        (isAccountant || isReceptionist) &&
+        staffResources.includes(resource)
+      ) {
         return true;
       }
 

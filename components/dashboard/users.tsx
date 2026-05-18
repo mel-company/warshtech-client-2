@@ -72,9 +72,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
+import { PermissionGrid } from "@/components/dashboard/permission-grid";
+import { findReceptionistRoleId } from "@/lib/reception-permissions";
 
 // =============================================================================
-// Permission Grid Component
+// Legacy permission grid (unused)
 // =============================================================================
 
 interface PermissionGridProps {
@@ -117,7 +119,7 @@ const resourcePermissionMap: Record<
   settings: { read: "SETTINGS_READ", write: "SETTINGS_WRITE" },
 };
 
-function PermissionGrid({
+function _LegacyPermissionGridUnused({
   permissions,
   onChange,
   readonly = false,
@@ -253,7 +255,14 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
     field: keyof UserFormData,
     value: string | boolean | UserPosition | null,
   ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === "position" && value === "receptionist") {
+        const roleId = findReceptionistRoleId(roles);
+        if (roleId) next.roleId = roleId;
+      }
+      return next;
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -278,6 +287,7 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
     "manager",
     "cashier",
     "accountant",
+    "receptionist",
     "viewer",
   ];
 
@@ -727,6 +737,7 @@ export function UsersPage() {
     "manager",
     "cashier",
     "accountant",
+    "receptionist",
     "viewer",
   ];
 

@@ -136,7 +136,7 @@ export interface Role {
   updatedAt: Date
 }
 
-export type UserPosition = 'admin' | 'manager' | 'cashier' | 'accountant' | 'viewer'
+export type UserPosition = 'admin' | 'manager' | 'cashier' | 'accountant' | 'receptionist' | 'viewer'
 
 export interface User {
   id: string
@@ -252,7 +252,7 @@ export interface UserFormData {
 // Invoice Types
 // -----------------------------------------------------------------------------
 
-export type InvoiceStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED'
+export type InvoiceStatus = 'PENDING' | 'IN_SERVICE' | 'COMPLETED' | 'CANCELLED'
 
 export interface InvoiceProduct {
   id: string

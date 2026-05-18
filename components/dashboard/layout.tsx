@@ -55,8 +55,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import Logo from '@/assets/logo'
-import { PosLayout } from '@/components/dashboard/pos-layout'
+import { StaffLayout } from '@/components/dashboard/staff-layout'
 import { isAccountantUser } from '@/lib/pos-access'
+import { isReceptionistUser, RECEPTIONIST_PATHS } from '@/lib/reception-access'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' as const, permission: null },
@@ -273,20 +274,23 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     if (isLoading || !user) return
-    const accountantPaths = ['/dashboard/pos', '/dashboard/active-service']
-    if (
-      isAccountantUser(user) &&
-      !accountantPaths.some((p) => pathname.startsWith(p))
-    ) {
-      router.replace('/dashboard/pos')
+    if (isReceptionistUser(user)) {
+      const ok = RECEPTIONIST_PATHS.some((p) => pathname.startsWith(p))
+      if (!ok) router.replace('/dashboard/reception')
+    } else if (isAccountantUser(user)) {
+      const accountantPaths = ['/dashboard/pos', '/dashboard/active-service']
+      if (!accountantPaths.some((p) => pathname.startsWith(p))) {
+        router.replace('/dashboard/pos')
+      }
     }
   }, [user, isLoading, pathname, router])
 
   if (
     pathname.startsWith('/dashboard/pos') ||
-    pathname.startsWith('/dashboard/active-service')
+    pathname.startsWith('/dashboard/active-service') ||
+    pathname.startsWith('/dashboard/reception')
   ) {
-    return <PosLayout>{children}</PosLayout>
+    return <StaffLayout>{children}</StaffLayout>
   }
 
   return (
