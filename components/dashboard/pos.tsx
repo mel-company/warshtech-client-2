@@ -1,0 +1,561 @@
+"use client";
+
+import * as React from "react";
+import {
+  Search,
+  Package,
+  Wrench,
+  ShoppingCart,
+  Trash2,
+  User,
+  Car,
+  CheckCircle,
+  Loader2,
+  Banknote,
+  RotateCcw,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
+import apiClient from "@/lib/api";
+import { resolveCustomerAndCar } from "@/lib/checkout";
+import type {
+  Car as CarType,
+  Customer,
+  InvoiceFormProduct,
+  InvoiceFormService,
+  Product,
+  Service,
+} from "@/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+
+export function PosPage() {
+  const { t } = useTranslation();
+  const [catalogTab, setCatalogTab] = React.useState<"products" | "services">("products");
+  const [search, setSearch] = React.useState("");
+  const [products, setProducts] = React.useState<Product[]>([]);
+  const [services, setServices] = React.useState<Service[]>([]);
+  const [isLoadingCatalog, setIsLoadingCatalog] = React.useState(true);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const [custPhone, setCustPhone] = React.useState("");
+  const [custName, setCustName] = React.useState("");
+  const [matchedCustomer, setMatchedCustomer] = React.useState<Customer | null>(null);
+  const [carNumber, setCarNumber] = React.useState("");
+  const [carName, setCarName] = React.useState("");
+  const [carModel, setCarModel] = React.useState("");
+  const [carColor, setCarColor] = React.useState("");
+  const [matchedCar, setMatchedCar] = React.useState<
+    (CarType & { customer?: { id: string } }) | null
+  >(null);
+  const [customerOpen, setCustomerOpen] = React.useState(true);
+
+  const [selectedServices, setSelectedServices] = React.useState<InvoiceFormService[]>([]);
+  const [selectedProducts, setSelectedProducts] = React.useState<InvoiceFormProduct[]>([]);
+  const [finalPrice, setFinalPrice] = React.useState(0);
+
+  React.useEffect(() => {
+    const load = async () => {
+      try {
+        const [productsRes, servicesRes] = await Promise.all([
+          apiClient.get<{ data: Product[] }>("/products?take=200"),
+          apiClient.get<{ data: Service[] }>("/services?take=200"),
+        ]);
+        setProducts(productsRes.data || []);
+        setServices((servicesRes.data || []).filter((s) => s.isActive));
+      } catch {
+        toast.error(t.messages.error.fetchFailed);
+      } finally {
+        setIsLoadingCatalog(false);
+      }
+    };
+    void load();
+  }, [t.messages.error.fetchFailed]);
+
+  React.useEffect(() => {
+    const phone = custPhone.trim();
+    if (phone.length < 4) {
+      setMatchedCustomer(null);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await apiClient.get<{ data: Customer[] }>(
+          `/customers?search=${encodeURIComponent(phone)}&take=1`,
+        );
+        setMatchedCustomer(res.data?.[0] ?? null);
+      } catch {
+        setMatchedCustomer(null);
+      }
+    }, 450);
+    return () => clearTimeout(timeout);
+  }, [custPhone]);
+
+  React.useEffect(() => {
+    const plate = carNumber.trim();
+    if (plate.length < 2) {
+      setMatchedCar(null);
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await apiClient.get<{ data: CarType[] }>(
+          `/cars?search=${encodeURIComponent(plate)}`,
+        );
+        setMatchedCar(res.data?.[0] ?? null);
+      } catch {
+        setMatchedCar(null);
+      }
+    }, 450);
+    return () => clearTimeout(timeout);
+  }, [carNumber]);
+
+  const filteredProducts = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return products;
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        (p.barcode && p.barcode.includes(q)),
+    );
+  }, [products, search]);
+
+  const filteredServices = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter((s) => s.name.toLowerCase().includes(q));
+  }, [services, search]);
+
+  const totalServices = selectedServices.reduce((s, x) => s + x.price, 0);
+  const totalProducts = selectedProducts.reduce((s, x) => s + x.unitPrice, 0);
+  const totalPrice = totalServices + totalProducts;
+  const minPrice =
+    selectedServices.reduce((s, x) => s + x.minPrice, 0) +
+    selectedProducts.reduce((s, x) => s + x.minPrice, 0);
+
+  React.useEffect(() => {
+    setFinalPrice(totalPrice);
+  }, [totalPrice]);
+
+  const addService = (service: Service) => {
+    if (selectedServices.some((s) => s.serviceId === service.id)) return;
+    setSelectedServices((prev) => [
+      ...prev,
+      {
+        serviceId: service.id,
+        serviceName: service.name,
+        price: Number(service.price),
+        minPrice: Number(service.price),
+      },
+    ]);
+  };
+
+  const addProduct = (product: Product) => {
+    if (selectedProducts.some((p) => p.productId === product.id)) return;
+    const uv = Number(product.unitValue) || 1;
+    const prodMin = Number(product.minPrice) || Number(product.salePrice);
+    setSelectedProducts((prev) => [
+      ...prev,
+      {
+        productId: product.id,
+        productName: product.name,
+        productPhoto: product.photos?.[0],
+        quantity: uv,
+        unitPrice: Number(product.salePrice),
+        minPrice: prodMin,
+        unit: product.unit,
+        unitValue: uv,
+        unitAdjustable: product.unitAdjustable || false,
+        originalUnitValue: uv,
+        originalPrice: Number(product.salePrice),
+        originalMinPrice: prodMin,
+      },
+    ]);
+  };
+
+  const resetSale = () => {
+    setSelectedServices([]);
+    setSelectedProducts([]);
+    setFinalPrice(0);
+    setSearch("");
+  };
+
+  const step1Valid =
+    custPhone.trim() &&
+    custName.trim() &&
+    carNumber.trim() &&
+    carName.trim() &&
+    carModel.trim() &&
+    carColor.trim();
+
+  const handleCheckout = async () => {
+    if (!step1Valid) {
+      toast.error(t.pos.completeCustomer);
+      setCustomerOpen(true);
+      return;
+    }
+    if (selectedServices.length === 0 && selectedProducts.length === 0) {
+      toast.error(t.pos.addItems);
+      return;
+    }
+    if (finalPrice < minPrice) {
+      toast.error(t.invoices.priceBelowMin);
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const resolved = await resolveCustomerAndCar(
+        { phone: custPhone, name: custName, matchedCustomer },
+        {
+          number: carNumber,
+          name: carName,
+          model: carModel,
+          color: carColor,
+          matchedCar,
+        },
+      );
+      if (!resolved) return;
+
+      await apiClient.post("/invoices", {
+        customerId: resolved.customerId,
+        carId: resolved.carId,
+        services: selectedServices.map((s) => ({
+          serviceId: s.serviceId,
+          price: s.price,
+        })),
+        products: selectedProducts.map((p) => ({
+          productId: p.productId,
+          quantity: p.quantity,
+          unitPrice: p.unitPrice,
+        })),
+        finalPrice,
+      });
+
+      toast.success(t.pos.saleComplete);
+      resetSale();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : t.messages.error.general;
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="grid h-[calc(100vh-4.5rem)] gap-4 lg:grid-cols-[1fr_380px]">
+      {/* Catalog */}
+      <Card className="flex min-h-0 flex-col overflow-hidden border-0 shadow-md">
+        <CardHeader className="shrink-0 space-y-3 border-b pb-4">
+          <div className="relative">
+            <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t.pos.searchPlaceholder}
+              className="ps-9"
+            />
+          </div>
+          <Tabs
+            value={catalogTab}
+            onValueChange={(v) => setCatalogTab(v as "products" | "services")}
+          >
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="products" className="gap-2">
+                <Package className="size-4" />
+                {t.invoices.products}
+              </TabsTrigger>
+              <TabsTrigger value="services" className="gap-2">
+                <Wrench className="size-4" />
+                {t.invoices.services}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardHeader>
+        <CardContent className="min-h-0 flex-1 p-0">
+          {isLoadingCatalog ? (
+            <div className="flex h-48 items-center justify-center">
+              <Loader2 className="size-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <ScrollArea className="h-full max-h-[calc(100vh-14rem)]">
+              <div className="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-3">
+                {catalogTab === "products"
+                  ? filteredProducts.map((product) => {
+                      const inCart = selectedProducts.some(
+                        (p) => p.productId === product.id,
+                      );
+                      const out = Number(product.stock) <= 0;
+                      return (
+                        <button
+                          key={product.id}
+                          type="button"
+                          disabled={out}
+                          onClick={() => addProduct(product)}
+                          className={cn(
+                            "flex flex-col rounded-xl border p-3 text-start transition-all hover:border-primary hover:shadow-md",
+                            inCart && "border-primary bg-primary/5 ring-1 ring-primary/30",
+                            out && "cursor-not-allowed opacity-50",
+                          )}
+                        >
+                          {product.photos?.[0] ? (
+                            <img
+                              src={product.photos[0]}
+                              alt=""
+                              className="mb-2 h-20 w-full rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="mb-2 flex h-20 items-center justify-center rounded-lg bg-muted">
+                              <Package className="size-8 text-muted-foreground" />
+                            </div>
+                          )}
+                          <span className="line-clamp-2 text-sm font-medium">
+                            {product.name}
+                          </span>
+                          <span className="mt-1 text-base font-bold text-primary">
+                            {Number(product.salePrice).toLocaleString()}{" "}
+                            {t.currency.symbol}
+                          </span>
+                          {out && (
+                            <Badge variant="destructive" className="mt-1 w-fit text-xs">
+                              {t.products.outOfStock}
+                            </Badge>
+                          )}
+                        </button>
+                      );
+                    })
+                  : filteredServices.map((service) => {
+                      const inCart = selectedServices.some(
+                        (s) => s.serviceId === service.id,
+                      );
+                      return (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => addService(service)}
+                          className={cn(
+                            "flex flex-col rounded-xl border p-4 text-start transition-all hover:border-primary hover:shadow-md",
+                            inCart && "border-primary bg-primary/5 ring-1 ring-primary/30",
+                          )}
+                        >
+                          <div className="mb-2 flex size-12 items-center justify-center rounded-lg bg-primary/10">
+                            <Wrench className="size-6 text-primary" />
+                          </div>
+                          <span className="line-clamp-2 text-sm font-medium">
+                            {service.name}
+                          </span>
+                          <span className="mt-1 text-base font-bold text-primary">
+                            {Number(service.price).toLocaleString()}{" "}
+                            {t.currency.symbol}
+                          </span>
+                        </button>
+                      );
+                    })}
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Cart */}
+      <Card className="flex min-h-0 flex-col border-0 shadow-md">
+        <CardHeader className="shrink-0 border-b pb-3">
+          <CardTitle className="flex items-center justify-between text-base">
+            <span className="flex items-center gap-2">
+              <ShoppingCart className="size-5 text-primary" />
+              {t.pos.cart}
+            </span>
+            <Badge variant="secondary">
+              {selectedProducts.length + selectedServices.length}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-4">
+          <Collapsible open={customerOpen} onOpenChange={setCustomerOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <span className="flex items-center gap-2">
+                  <User className="size-4" />
+                  {t.pos.customerSection}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  {step1Valid ? t.pos.ready : t.pos.required}
+                </span>
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3 space-y-2 rounded-lg border bg-muted/30 p-3">
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">{t.invoices.customerPhone}</Label>
+                  <Input
+                    value={custPhone}
+                    onChange={(e) => setCustPhone(e.target.value)}
+                    dir="ltr"
+                    placeholder="+964"
+                  />
+                  {matchedCustomer && (
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-xs text-primary"
+                      onClick={() => {
+                        setCustName(matchedCustomer.name);
+                        setCustPhone(matchedCustomer.phone);
+                      }}
+                    >
+                      <CheckCircle className="size-3" />
+                      {matchedCustomer.name}
+                    </button>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">{t.invoices.customerName}</Label>
+                  <Input
+                    value={custName}
+                    onChange={(e) => setCustName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Separator />
+              <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+                <Car className="size-3.5" />
+                {t.invoices.car}
+              </div>
+              <div className="grid gap-2 grid-cols-2">
+                <Input
+                  value={carNumber}
+                  onChange={(e) => setCarNumber(e.target.value)}
+                  placeholder={t.invoices.carNumber}
+                />
+                <Input
+                  value={carName}
+                  onChange={(e) => setCarName(e.target.value)}
+                  placeholder={t.invoices.carName}
+                />
+                <Input
+                  value={carModel}
+                  onChange={(e) => setCarModel(e.target.value)}
+                  placeholder={t.invoices.carModel}
+                />
+                <Input
+                  value={carColor}
+                  onChange={(e) => setCarColor(e.target.value)}
+                  placeholder={t.invoices.carColor}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-2 pr-1">
+              {selectedServices.length === 0 && selectedProducts.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  {t.pos.emptyCart}
+                </p>
+              )}
+              {selectedServices.map((s, i) => (
+                <div
+                  key={s.serviceId}
+                  className="flex items-center justify-between gap-2 rounded-lg border bg-card p-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{s.serviceName}</p>
+                    <p className="text-xs text-primary">
+                      {s.price.toLocaleString()} {t.currency.symbol}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 text-destructive"
+                    onClick={() =>
+                      setSelectedServices((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+              {selectedProducts.map((p, i) => (
+                <div
+                  key={p.productId}
+                  className="flex items-center justify-between gap-2 rounded-lg border bg-card p-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{p.productName}</p>
+                    <p className="text-xs text-primary">
+                      {p.unitPrice.toLocaleString()} {t.currency.symbol}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 shrink-0 text-destructive"
+                    onClick={() =>
+                      setSelectedProducts((prev) => prev.filter((_, idx) => idx !== i))
+                    }
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <div className="shrink-0 space-y-3 rounded-xl border bg-muted/40 p-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">{t.invoices.totalPrice}</span>
+              <span>{totalPrice.toLocaleString()} {t.currency.symbol}</span>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t.invoices.finalPrice}</Label>
+              <Input
+                type="number"
+                min={minPrice}
+                value={finalPrice || ""}
+                onChange={(e) => setFinalPrice(parseFloat(e.target.value) || 0)}
+                className="text-lg font-bold"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant="outline" onClick={resetSale} disabled={isSubmitting}>
+                <RotateCcw className="size-4" />
+                {t.pos.newSale}
+              </Button>
+              <Button
+                type="button"
+                className="gap-2"
+                onClick={handleCheckout}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Banknote className="size-4" />
+                )}
+                {t.pos.checkout}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+

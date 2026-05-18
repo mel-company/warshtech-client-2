@@ -273,7 +273,13 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
     onSubmit(formData);
   };
 
-  const positions: UserPosition[] = ["admin", "manager", "cashier", "viewer"];
+  const positions: UserPosition[] = [
+    "admin",
+    "manager",
+    "cashier",
+    "accountant",
+    "viewer",
+  ];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 rtl-auto">
@@ -716,7 +722,13 @@ export function UsersPage() {
     }
   };
 
-  const positions: UserPosition[] = ["admin", "manager", "cashier", "viewer"];
+  const positions: UserPosition[] = [
+    "admin",
+    "manager",
+    "cashier",
+    "accountant",
+    "viewer",
+  ];
 
   return (
     <div className="space-y-6">

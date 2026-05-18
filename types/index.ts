@@ -136,7 +136,7 @@ export interface Role {
   updatedAt: Date
 }
 
-export type UserPosition = 'admin' | 'manager' | 'cashier' | 'viewer'
+export type UserPosition = 'admin' | 'manager' | 'cashier' | 'accountant' | 'viewer'
 
 export interface User {
   id: string

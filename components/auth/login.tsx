@@ -27,6 +27,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { FIXED_TENANT_ID, isTenantLocked } from "@/lib/tenant-config";
 
 type AuthStep = "credentials" | "otp";
 
@@ -36,7 +37,7 @@ export function LoginPage() {
   const [step, setStep] = useState<AuthStep>("credentials");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [tenantId, setTenantId] = useState("");
+  const [tenantId, setTenantId] = useState(FIXED_TENANT_ID);
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
 
@@ -44,12 +45,13 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!phone || !password || !tenantId) {
+    const tenant = (isTenantLocked ? FIXED_TENANT_ID : tenantId).trim();
+    if (!phone || !password || !tenant) {
       setError(t("auth.fillAllFields"));
       return;
     }
 
-    const success = await login(phone, password, tenantId);
+    const success = await login(phone, password, tenant);
     if (success) {
       router.push("/dashboard");
     } else {
@@ -122,6 +124,7 @@ export function LoginPage() {
           <CardContent>
             {step === "credentials" ? (
               <form onSubmit={handleLogin} className="space-y-4">
+                {!isTenantLocked && (
                 <div className="space-y-2">
                   <Label htmlFor="tenant">{t("auth.tenant")}</Label>
                   <div className="relative">
@@ -138,6 +141,7 @@ export function LoginPage() {
                     />
                   </div>
                 </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="phone">{t("auth.phone")}</Label>
                   <div className="relative">

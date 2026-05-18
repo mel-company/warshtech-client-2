@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
@@ -54,6 +54,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import Logo from '@/assets/logo'
+import { PosLayout } from '@/components/dashboard/pos-layout'
+import { isAccountantUser } from '@/lib/pos-access'
 
 const navItems = [
   { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' as const, permission: null },
@@ -239,6 +241,7 @@ function DashboardHeader() {
     if (pathname.includes('/employees')) return t.nav.employees
     if (pathname.includes('/users')) return t.nav.users
     if (pathname.includes('/invoices')) return t.nav.invoices
+    if (pathname.includes('/pos')) return t.nav.pos
     if (pathname.includes('/roles')) return t.nav.roles
     if (pathname.includes('/settings')) return t.nav.settings
     return t.nav.dashboard
@@ -261,6 +264,21 @@ function DashboardHeader() {
 }
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const { user, isLoading } = useAuth()
+
+  React.useEffect(() => {
+    if (isLoading || !user) return
+    if (isAccountantUser(user) && !pathname.startsWith('/dashboard/pos')) {
+      router.replace('/dashboard/pos')
+    }
+  }, [user, isLoading, pathname, router])
+
+  if (pathname.startsWith('/dashboard/pos')) {
+    return <PosLayout>{children}</PosLayout>
+  }
+
   return (
     <SidebarProvider defaultOpen={true}>
       <AppSidebar />

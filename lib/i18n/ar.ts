@@ -42,6 +42,7 @@ export const ar = {
     users: "المستخدمين",
     roles: "الأدوار والصلاحيات",
     invoices: "الفواتير",
+    pos: "نقطة البيع",
     reports: "التقارير",
     settings: "الإعدادات",
     logout: "تسجيل الخروج",
@@ -248,6 +249,7 @@ export const ar = {
       admin: "مدير النظام",
       manager: "مدير",
       cashier: "كاشير",
+      accountant: "محاسب",
       viewer: "مشاهد",
     },
     permissions: {
@@ -280,6 +282,7 @@ export const ar = {
     passwordPlaceholder: "أدخل كلمة المرور",
     tenant: "المعمل/الفرع",
     tenantPlaceholder: "اسم المعمل أو المعرف",
+    tenantHint: "أدخل النطاق الفرعي (subdomain) أو معرف المعمل كما سجّلته",
     otp: "رمز التحقق",
     sendOTP: "إرسال رمز التحقق",
     verifyOTP: "التحقق من الرمز",
@@ -322,6 +325,22 @@ export const ar = {
   // ---------------------------------------------------------------------------
   // Invoices
   // ---------------------------------------------------------------------------
+  pos: {
+    title: "نقطة البيع",
+    cart: "سلة البيع",
+    customerSection: "بيانات العميل والسيارة",
+    searchPlaceholder: "بحث عن منتج أو خدمة...",
+    emptyCart: "السلة فارغة — اختر منتجات أو خدمات",
+    checkout: "إتمام البيع",
+    newSale: "بيع جديد",
+    saleComplete: "تم إتمام البيع بنجاح",
+    completeCustomer: "أكمل بيانات العميل والسيارة",
+    addItems: "أضف منتجاً أو خدمة واحدة على الأقل",
+    ready: "جاهز",
+    required: "مطلوب",
+    accountantOnly: "هذه الصفحة للمحاسب فقط",
+  },
+
   invoices: {
     title: "الفواتير",
     addNew: "إنشاء فاتورة جديدة",

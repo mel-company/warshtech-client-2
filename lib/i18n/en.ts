@@ -33,6 +33,7 @@ export const en = {
     users: "Users",
     roles: "Roles & Permissions",
     invoices: "Invoices",
+    pos: "Point of Sale",
     reports: "Reports",
     settings: "Settings",
     logout: "Logout",
@@ -218,6 +219,7 @@ export const en = {
       admin: "System Admin",
       manager: "Manager",
       cashier: "Cashier",
+      accountant: "Accountant",
       viewer: "Viewer",
     },
     permissions: {
@@ -244,6 +246,7 @@ export const en = {
     password: "Password",
     tenant: "Workshop/Branch",
     tenantPlaceholder: "Workshop name or ID",
+    tenantHint: "Enter your workshop subdomain or tenant ID from registration",
     otp: "Verification Code",
     sendOTP: "Send Verification Code",
     verifyOTP: "Verify Code",
@@ -280,6 +283,22 @@ export const en = {
     registerFailed: "Failed to create account",
     registerDescription: "Create a new account to start using the system",
     registerSuccess: "Account created successfully",
+  },
+
+  pos: {
+    title: "Point of Sale",
+    cart: "Cart",
+    customerSection: "Customer & vehicle",
+    searchPlaceholder: "Search products or services...",
+    emptyCart: "Cart is empty — add products or services",
+    checkout: "Complete sale",
+    newSale: "New sale",
+    saleComplete: "Sale completed successfully",
+    completeCustomer: "Complete customer and vehicle details",
+    addItems: "Add at least one product or service",
+    ready: "Ready",
+    required: "Required",
+    accountantOnly: "This page is for accountants only",
   },
 
   invoices: {

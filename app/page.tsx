@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth"
+import { getPostLoginPath } from "@/lib/pos-access"
 import { LandingPage } from "@/components/landing/landing-page"
 import { Loader2 } from "lucide-react"
 
@@ -12,7 +13,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isLoading && user) {
-      router.replace("/dashboard")
+      router.replace(getPostLoginPath(user))
     }
   }, [user, isLoading, router])
 

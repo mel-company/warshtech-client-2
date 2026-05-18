@@ -138,7 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           refreshToken: string;
           tenant: TenantInfo;
           user: AuthUser;
-        }>("/auth/login", { phone, password, tenantId });
+        }>("/auth/login", { phone, password, tenantId }, { tenantId });
         localStorage.setItem("auth_user", JSON.stringify(response.user));
         localStorage.setItem("access_token", response.accessToken);
         localStorage.setItem("refresh_token", response.refreshToken);
