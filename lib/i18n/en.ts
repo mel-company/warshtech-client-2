@@ -41,6 +41,59 @@ export const en = {
     logout: "Logout",
   },
 
+  navGroups: {
+    overview: "General",
+    workshop: "Workshop & sales",
+    catalog: "Data",
+    administration: "Administration",
+  },
+
+  workspaceHome: {
+    greeting: "Hello {name}",
+    subtitle: "Pick a task to get started",
+    roleLabel: "Your role",
+    pickTask: "Shortcuts based on your permissions",
+    noAccess: "No pages available for your account. Contact your manager.",
+  },
+
+  rolesPage: {
+    presetsTitle: "Role templates",
+    presetsHint: "Start from a template, then adjust name and permissions",
+    presetApplied: "Template applied — review permissions and save",
+    syncAccountant: "Fix accountant role",
+    syncReception: "Fix reception role",
+    syncAccountantHint:
+      "Creates or updates the Accountant role with full POS permissions (from server)",
+    syncReceptionHint:
+      "Creates or updates the Receptionist role with full reception bundle",
+    syncRoleDone: "Role updated — ask staff to sign in again",
+    syncRoleFailed: "Failed to sync role with server",
+    customRole: "Custom role",
+    permissionCount: "{count} permissions",
+    presets: {
+      reception: {
+        name: "Receptionist",
+        description: "Vehicle intake, customers, and services",
+      },
+      accountant: {
+        name: "Accountant / POS",
+        description: "Sales, invoices, and customers",
+      },
+      cashier: {
+        name: "Cashier",
+        description: "Point of sale and invoices",
+      },
+      warehouse: {
+        name: "Warehouse",
+        description: "Products and inventory",
+      },
+      multiTask: {
+        name: "Multi-role staff",
+        description: "Reception, sales, and inventory in one role",
+      },
+    },
+  },
+
   actions: {
     add: "Add",
     edit: "Edit",
@@ -353,6 +406,12 @@ export const en = {
     accountantOnly: "This page is for accountants only",
     catalogEmpty:
       "No products or services found — add them from the dashboard (admin account)",
+    catalogForbidden:
+      "Cannot load products or services — ask admin to add PRODUCTS_READ and SERVICES_READ to your role",
+    missingPermissionsTitle: "POS permissions missing on your role",
+    missingPermissionsHint:
+      "Roles → edit Accountant/Cashier role or use the Cashier template, then sign in again:",
+    cannotSell: "You need INVOICES_WRITE to complete a sale",
   },
 
   invoices: {

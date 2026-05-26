@@ -1,28 +1,33 @@
 import type { AuthUser } from "@/types";
-
-export {
-  isReceptionistUser,
+import {
+  canAccessPos,
   canAccessReception,
   getPostLoginPath,
-  RECEPTIONIST_PATHS,
-  ACCOUNTANT_PATHS,
-} from "@/lib/reception-access";
+  getStaffPaths,
+  isStaffOnlyUser,
+} from "@/lib/user-capabilities";
 
-/** مستخدم محاسب — يرى نقطة البيع فقط */
+export {
+  canAccessPos,
+  canAccessReception,
+  getPostLoginPath,
+  getStaffPaths,
+  isStaffOnlyUser,
+};
+
+export { isReceptionistUser } from "@/lib/reception-access";
+
+/** @deprecated استخدم canAccessPos */
 export function isAccountantUser(user: AuthUser | null): boolean {
-  if (!user) return false;
-  if (user.role === "Owner") return false;
-
-  const position = (user.position || "").toLowerCase();
-  const role = (user.role || "").toLowerCase();
-
-  return (
-    position === "accountant" ||
-    role === "accountant" ||
-    role.includes("محاسب")
-  );
+  return canAccessPos(user);
 }
 
-export function canAccessPos(user: AuthUser | null): boolean {
-  return isAccountantUser(user);
-}
+export const RECEPTIONIST_PATHS = [
+  "/dashboard/reception",
+  "/dashboard/active-service",
+] as const;
+
+export const ACCOUNTANT_PATHS = [
+  "/dashboard/pos",
+  "/dashboard/active-service",
+] as const;

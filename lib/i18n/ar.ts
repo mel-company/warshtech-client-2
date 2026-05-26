@@ -34,7 +34,7 @@ export const ar = {
   // Navigation
   // ---------------------------------------------------------------------------
   nav: {
-    dashboard: "لوحة التحكم",
+    dashboard: "الرئيسية",
     customers: "العملاء",
     products: "المنتجات",
     services: "الخدمات",
@@ -42,12 +42,65 @@ export const ar = {
     users: "المستخدمين",
     roles: "الأدوار والصلاحيات",
     invoices: "الفواتير",
-    pos: "نقطة البيع",
+    pos: "نقطة البيع (كاشير)",
     activeService: "تحت الصيانة",
     reception: "الاستقبال",
     reports: "التقارير",
     settings: "الإعدادات",
     logout: "تسجيل الخروج",
+  },
+
+  navGroups: {
+    overview: "عام",
+    workshop: "الورشة والبيع",
+    catalog: "البيانات",
+    administration: "الإدارة",
+  },
+
+  workspaceHome: {
+    greeting: "مرحباً {name}",
+    subtitle: "اختر المهمة التي تريد البدء بها",
+    roleLabel: "دورك",
+    pickTask: "اختصارات حسب صلاحياتك",
+    noAccess: "لا توجد صفحات متاحة لحسابك. تواصل مع المدير.",
+  },
+
+  rolesPage: {
+    presetsTitle: "قوالب الأدوار",
+    presetsHint: "ابدأ من قالب جاهز ثم عدّل الاسم والصلاحيات حسب حاجتك",
+    presetApplied: "تم تطبيق القالب — راجع الصلاحيات ثم احفظ",
+    syncAccountant: "إصلاح دور المحاسب",
+    syncReception: "إصلاح دور الاستقبال",
+    syncAccountantHint:
+      "ينشئ أو يحدّث دور «محاسب» بكل صلاحيات نقطة البيع (من السيرفر)",
+    syncReceptionHint:
+      "ينشئ أو يحدّث دور «موظف استقبال» بصلاحيات الاستقبال الكاملة",
+    syncRoleDone: "تم تحديث الدور — اطلب من الموظفين إعادة تسجيل الدخول",
+    syncRoleFailed: "فشل مزامنة الدور مع السيرفر",
+    customRole: "دور مخصص",
+    permissionCount: "{count} صلاحية",
+    presets: {
+      reception: {
+        name: "موظف استقبال",
+        description: "تسجيل السيارات، العملاء، والخدمات",
+      },
+      accountant: {
+        name: "محاسب / نقطة بيع",
+        description: "بيع، فواتير، وعملاء",
+      },
+      cashier: {
+        name: "كاشير",
+        description: "نقطة البيع والفواتير",
+      },
+      warehouse: {
+        name: "أمين مخزن",
+        description: "إدارة المنتجات والمخزون",
+      },
+      multiTask: {
+        name: "موظف متعدد المهام",
+        description: "استقبال + بيع + مخزن في دور واحد",
+      },
+    },
   },
 
   // ---------------------------------------------------------------------------
@@ -393,6 +446,12 @@ export const ar = {
     accountantOnly: "هذه الصفحة للمحاسب فقط",
     catalogEmpty:
       "لا توجد منتجات أو خدمات — أضفها من لوحة التحكم (بحساب المسؤول)",
+    catalogForbidden:
+      "لا صلاحية لتحميل المنتجات أو الخدمات — اطلب من المدير إضافة PRODUCTS_READ و SERVICES_READ لدورك",
+    missingPermissionsTitle: "صلاحيات نقطة البيع ناقصة في الدور",
+    missingPermissionsHint:
+      "من الأدوار → عدّل دور «محاسب» أو استخدم قالب «كاشير» ثم سجّل دخول من جديد:",
+    cannotSell: "لا تملك صلاحية إنشاء فاتورة (INVOICES_WRITE)",
   },
 
   invoices: {

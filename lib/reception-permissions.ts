@@ -8,7 +8,11 @@ export const RECEPTIONIST_ROLE_NAMES = [
   "Reception",
 ] as const;
 
-/** صلاحيات موظف الاستقبال — انسخها لدور في الباك إند */
+/**
+ * قالب صلاحيات «استقبال السيارات» — متوافق مع الباك إند.
+ * إنشاء/تحديث الدور: POST /roles/presets/reception
+ * عند الدخول: `user.permissions` من الدور في DB فقط.
+ */
 export const RECEPTIONIST_PERMISSIONS: Permission[] = [
   "CUSTOMERS_READ",
   "CUSTOMERS_WRITE",

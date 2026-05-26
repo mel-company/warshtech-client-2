@@ -18,7 +18,10 @@ import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
 import apiClient from "@/lib/api";
+import { getPosPermissionGaps } from "@/lib/pos-permissions";
+import { canSellFromPos } from "@/lib/user-capabilities";
 import { extractListData } from "@/lib/list-response";
 import { resolveCustomerAndCar } from "@/lib/checkout";
 import type {
@@ -45,11 +48,18 @@ import { Separator } from "@/components/ui/separator";
 
 export function PosPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const permissionGaps = React.useMemo(
+    () => getPosPermissionGaps(user?.permissions ?? []),
+    [user?.permissions],
+  );
+  const canSell = canSellFromPos(user);
   const [catalogTab, setCatalogTab] = React.useState<"products" | "services">("products");
   const [search, setSearch] = React.useState("");
   const [products, setProducts] = React.useState<Product[]>([]);
   const [services, setServices] = React.useState<Service[]>([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = React.useState(true);
+  const [catalogError, setCatalogError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [custPhone, setCustPhone] = React.useState("");
@@ -70,31 +80,48 @@ export function PosPage() {
 
   React.useEffect(() => {
     const load = async () => {
+      setCatalogError(null);
+      let productList: Product[] = [];
+      let serviceList: Service[] = [];
+      let hadForbidden = false;
+
       try {
-        const [productsRes, servicesRes] = await Promise.all([
-          apiClient.get<{ data: Product[] }>("/products?take=500"),
-          apiClient.get<{ data: Service[] }>("/services?take=500"),
-        ]);
-        const productList = extractListData(productsRes);
-        const serviceList = extractListData(servicesRes).filter(
+        const productsRes = await apiClient.get<{ data: Product[] }>(
+          "/products?take=500",
+        );
+        productList = extractListData(productsRes);
+      } catch (error) {
+        const msg = error instanceof Error ? error.message : "";
+        if (msg.toLowerCase().includes("forbidden")) hadForbidden = true;
+        console.error("POS products load failed:", error);
+      }
+
+      try {
+        const servicesRes = await apiClient.get<{ data: Service[] }>(
+          "/services?take=500",
+        );
+        serviceList = extractListData(servicesRes).filter(
           (s) => s.isActive !== false,
         );
-        setProducts(productList);
-        setServices(serviceList);
-        if (productList.length === 0 && serviceList.length === 0) {
-          toast.message(t.pos.catalogEmpty);
-        }
       } catch (error) {
-        console.error("POS catalog load failed:", error);
-        const msg =
-          error instanceof Error ? error.message : t.messages.error.fetchFailed;
-        toast.error(msg);
-      } finally {
-        setIsLoadingCatalog(false);
+        const msg = error instanceof Error ? error.message : "";
+        if (msg.toLowerCase().includes("forbidden")) hadForbidden = true;
+        console.error("POS services load failed:", error);
       }
+
+      setProducts(productList);
+      setServices(serviceList);
+
+      if (hadForbidden) {
+        setCatalogError(t.pos.catalogForbidden);
+      } else if (productList.length === 0 && serviceList.length === 0) {
+        toast.message(t.pos.catalogEmpty);
+      }
+
+      setIsLoadingCatalog(false);
     };
     void load();
-  }, [t.messages.error.fetchFailed]);
+  }, [t.pos.catalogEmpty, t.pos.catalogForbidden]);
 
   React.useEffect(() => {
     const phone = custPhone.trim();
@@ -213,6 +240,10 @@ export function PosPage() {
     carColor.trim();
 
   const handleCheckout = async () => {
+    if (!canSell) {
+      toast.error(t.pos.cannotSell);
+      return;
+    }
     if (!step1Valid) {
       toast.error(t.pos.completeCustomer);
       setCustomerOpen(true);
@@ -268,7 +299,22 @@ export function PosPage() {
   };
 
   return (
-    <div className="grid h-[calc(100vh-4.5rem)] gap-4 lg:grid-cols-[1fr_380px]">
+    <div className="space-y-4">
+      {permissionGaps.length > 0 && (
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <p className="font-medium">{t.pos.missingPermissionsTitle}</p>
+          <p className="mt-1 text-muted-foreground">{t.pos.missingPermissionsHint}</p>
+          <p className="mt-2 font-mono text-xs" dir="ltr">
+            {permissionGaps.join(" · ")}
+          </p>
+        </div>
+      )}
+      {catalogError && (
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {catalogError}
+        </div>
+      )}
+    <div className="grid h-[calc(100vh-8rem)] gap-4 lg:grid-cols-[1fr_380px]">
       {/* Catalog */}
       <Card className="flex min-h-0 flex-col overflow-hidden border-0 shadow-md">
         <CardHeader className="shrink-0 space-y-3 border-b pb-4">
@@ -553,7 +599,8 @@ export function PosPage() {
                 type="button"
                 className="gap-2"
                 onClick={handleCheckout}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !canSell}
+                title={!canSell ? t.pos.cannotSell : undefined}
               >
                 {isSubmitting ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -566,6 +613,7 @@ export function PosPage() {
           </div>
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

@@ -74,6 +74,7 @@ import { Separator } from "@/components/ui/separator";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
 import { PermissionGrid } from "@/components/dashboard/permission-grid";
 import { findReceptionistRoleId } from "@/lib/reception-permissions";
+import { findAccountantRoleId, findCashierRoleId } from "@/lib/pos-permissions";
 
 // =============================================================================
 // Legacy permission grid (unused)
@@ -257,8 +258,17 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
   ) => {
     setFormData((prev) => {
       const next = { ...prev, [field]: value };
+      // اقتراح الدور عند اختيار المنصب — الصلاحيات من الدور في DB فقط
       if (field === "position" && value === "receptionist") {
         const roleId = findReceptionistRoleId(roles);
+        if (roleId) next.roleId = roleId;
+      }
+      if (field === "position" && value === "accountant") {
+        const roleId = findAccountantRoleId(roles);
+        if (roleId) next.roleId = roleId;
+      }
+      if (field === "position" && value === "cashier") {
+        const roleId = findCashierRoleId(roles) ?? findAccountantRoleId(roles);
         if (roleId) next.roleId = roleId;
       }
       return next;

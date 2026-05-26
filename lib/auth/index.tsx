@@ -8,6 +8,7 @@ import {
   hasReceptionistPermissions,
   hasReceptionistReadAccess,
 } from "@/lib/reception-permissions";
+import { hasPosNavAccess, hasPosSellAccess } from "@/lib/pos-permissions";
 
 export interface TenantInfo {
   id: string;
@@ -234,29 +235,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return true;
       }
 
-      const position = (state.user.position || "").toLowerCase();
-      const role = (state.user.role || "").toLowerCase();
-      const isAccountant =
-        position === "accountant" ||
-        role === "accountant" ||
-        role.includes("محاسب");
-      const isReceptionist =
-        position === "receptionist" ||
-        role === "receptionist" ||
-        role.includes("استقبال");
-
       if (resource === "reception") {
         const perms = state.user.permissions;
         if (level === "write") return hasReceptionistPermissions(perms);
         return hasReceptionistReadAccess(perms);
       }
 
-      const staffResources = ["customers", "products", "services", "invoices"];
-      if (
-        (isAccountant || isReceptionist) &&
-        staffResources.includes(resource)
-      ) {
-        return true;
+      if (resource === "pos") {
+        const perms = state.user.permissions ?? [];
+        if (level === "write") return hasPosSellAccess(perms);
+        return hasPosNavAccess(perms, state.user.role);
       }
 
       const resourceUpper = resource.toUpperCase();

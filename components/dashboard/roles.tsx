@@ -10,6 +10,9 @@ import {
   Shield,
   Users,
   Lock,
+  CarFront,
+  ShoppingCart,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,10 +48,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
 import { PermissionGrid } from "@/components/dashboard/permission-grid";
+import { RolePresetPicker } from "@/components/dashboard/role-preset-picker";
+import type { RolePresetId } from "@/lib/role-presets";
 import {
-  RECEPTIONIST_PERMISSIONS,
-  RECEPTIONIST_ROLE_NAMES,
-} from "@/lib/reception-permissions";
+  applyAccountantRolePreset,
+  applyReceptionRolePreset,
+} from "@/lib/role-presets-api";
 
 // =============================================================================
 // Legacy permission grid (unused — see permission-grid.tsx)
@@ -198,7 +203,10 @@ function RoleForm({ role, onSubmit, onCancel, isLoading }: RoleFormProps) {
   const { t } = useTranslation();
   const [name, setName] = React.useState(role?.name || "");
   const [permissions, setPermissions] = React.useState<Permission[]>(
-    role?.permissions || []
+    role?.permissions || [],
+  );
+  const [selectedPreset, setSelectedPreset] = React.useState<RolePresetId | null>(
+    null,
   );
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -223,9 +231,27 @@ function RoleForm({ role, onSubmit, onCancel, isLoading }: RoleFormProps) {
         />
       </div>
 
+      {!role && (
+        <RolePresetPicker
+          selectedId={selectedPreset}
+          disabled={isLoading}
+          onApply={({ id, name: presetName, permissions: presetPerms }) => {
+            setName(presetName);
+            setPermissions(presetPerms);
+            setSelectedPreset(id);
+          }}
+        />
+      )}
+
       <div className="space-y-4">
         <Label>{t.users.permissions.title}</Label>
-        <PermissionGrid permissions={permissions} onChange={setPermissions} />
+        <PermissionGrid
+          permissions={permissions}
+          onChange={(p) => {
+            setPermissions(p);
+            setSelectedPreset(null);
+          }}
+        />
       </div>
 
       <div className="flex gap-2 pt-4">
@@ -255,6 +281,9 @@ export function RolesPage() {
   const [editingRole, setEditingRole] = React.useState<Role | undefined>();
   const [deletingRole, setDeletingRole] = React.useState<Role | undefined>();
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isSyncingPreset, setIsSyncingPreset] = React.useState<
+    "accountant" | "reception" | null
+  >(null);
   const [isFetching, setIsFetching] = React.useState(true);
   const [hasAccess, setHasAccess] = React.useState(true);
 
@@ -353,28 +382,32 @@ export function RolesPage() {
     return permissions.length;
   };
 
-  const handleCreateReceptionistRole = async () => {
-    const roleName = RECEPTIONIST_ROLE_NAMES[0];
-    const exists = roles.some(
-      (r) => r.name.toLowerCase() === roleName.toLowerCase(),
-    );
-    if (exists) {
-      toast.message(t.users.permissions.receptionRoleExists);
-      return;
-    }
-    setIsLoading(true);
+  const upsertRoleInList = (role: Role) => {
+    setRoles((prev) => {
+      const idx = prev.findIndex((r) => r.id === role.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = role;
+        return next;
+      }
+      return [role, ...prev];
+    });
+  };
+
+  const handleSyncPreset = async (preset: "accountant" | "reception") => {
+    setIsSyncingPreset(preset);
     try {
-      const result = await apiClient.post<Role>("/roles", {
-        name: roleName,
-        permissions: RECEPTIONIST_PERMISSIONS,
-      });
-      setRoles((prev) => [result, ...prev]);
-      toast.success(t.users.permissions.receptionRoleCreated);
+      const role =
+        preset === "accountant"
+          ? await applyAccountantRolePreset()
+          : await applyReceptionRolePreset();
+      upsertRoleInList(role);
+      toast.success(t.rolesPage.syncRoleDone);
     } catch (error) {
-      console.error("Failed to create receptionist role:", error);
-      toast.error(t.messages.error.saveFailed);
+      console.error("Role preset sync failed:", error);
+      toast.error(t.rolesPage.syncRoleFailed);
     } finally {
-      setIsLoading(false);
+      setIsSyncingPreset(null);
     }
   };
 
@@ -389,12 +422,30 @@ export function RolesPage() {
         {hasAccess && canWrite && (
           <div className="flex flex-wrap gap-2">
             <Button
+              type="button"
               variant="outline"
-              onClick={() => void handleCreateReceptionistRole()}
-              disabled={isLoading}
+              disabled={isSyncingPreset !== null}
+              onClick={() => void handleSyncPreset("accountant")}
             >
-              <Shield className="ml-1 size-4" />
-              {t.users.permissions.createReceptionRole}
+              {isSyncingPreset === "accountant" ? (
+                <Loader2 className="ml-1 size-4 animate-spin" />
+              ) : (
+                <ShoppingCart className="ml-1 size-4" />
+              )}
+              {t.rolesPage.syncAccountant}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isSyncingPreset !== null}
+              onClick={() => void handleSyncPreset("reception")}
+            >
+              {isSyncingPreset === "reception" ? (
+                <Loader2 className="ml-1 size-4 animate-spin" />
+              ) : (
+                <CarFront className="ml-1 size-4" />
+              )}
+              {t.rolesPage.syncReception}
             </Button>
             <Button onClick={handleAddNew}>
               <Plus className="ml-1 size-4" />
@@ -403,6 +454,17 @@ export function RolesPage() {
           </div>
         )}
       </div>
+
+      {hasAccess && canWrite && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">{t.rolesPage.presetsTitle}</CardTitle>
+            <CardDescription>
+              {t.rolesPage.syncAccountantHint} · {t.rolesPage.syncReceptionHint}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {!hasAccess && (
         <Card>

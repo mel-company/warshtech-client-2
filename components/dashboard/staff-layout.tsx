@@ -15,13 +15,13 @@ import { useTheme } from "next-themes";
 
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-import { canAccessPos } from "@/lib/pos-access";
 import {
+  canAccessPos,
   canAccessReception,
-  isReceptionistUser,
-  RECEPTIONIST_PATHS,
-  ACCOUNTANT_PATHS,
-} from "@/lib/reception-access";
+  canAccessActiveService,
+  canAccessStaffPath,
+  getStaffPaths,
+} from "@/lib/user-capabilities";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Logo from "@/assets/logo";
@@ -47,7 +47,7 @@ function ThemeToggle() {
 }
 
 function canAccessStaff(user: NonNullable<ReturnType<typeof useAuth>["user"]>) {
-  return canAccessPos(user) || canAccessReception(user);
+  return getStaffPaths(user).length > 0;
 }
 
 export function StaffLayout({ children }: { children: React.ReactNode }) {
@@ -66,12 +66,9 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
       router.replace("/dashboard");
       return;
     }
-    if (isReceptionistUser(user)) {
-      const ok = RECEPTIONIST_PATHS.some((p) => pathname.startsWith(p));
-      if (!ok) router.replace("/dashboard/reception");
-    } else if (canAccessPos(user)) {
-      const ok = ACCOUNTANT_PATHS.some((p) => pathname.startsWith(p));
-      if (!ok) router.replace("/dashboard/pos");
+    if (!canAccessStaffPath(user, pathname)) {
+      const allowed = getStaffPaths(user);
+      if (allowed[0]) router.replace(allowed[0]);
     }
   }, [user, isLoading, pathname, router]);
 
@@ -96,7 +93,9 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const isReception = isReceptionistUser(user);
+  const showReception = canAccessReception(user);
+  const showPos = canAccessPos(user);
+  const showActive = canAccessActiveService(user);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-primary/5 via-background to-background">
@@ -112,8 +111,8 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <nav className="flex items-center gap-1 rounded-lg border bg-card/80 p-0.5">
-            {isReception ? (
+          <nav className="flex flex-wrap items-center gap-1 rounded-lg border bg-card/80 p-0.5">
+            {showReception && (
               <Button
                 variant={
                   pathname.startsWith("/dashboard/reception")
@@ -129,7 +128,8 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
                   <span className="hidden sm:inline">{t.nav.reception}</span>
                 </Link>
               </Button>
-            ) : (
+            )}
+            {showPos && (
               <Button
                 variant={
                   pathname.startsWith("/dashboard/pos") ? "secondary" : "ghost"
@@ -144,21 +144,23 @@ export function StaffLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               </Button>
             )}
-            <Button
-              variant={
-                pathname.startsWith("/dashboard/active-service")
-                  ? "secondary"
-                  : "ghost"
-              }
-              size="sm"
-              className="h-8 gap-1.5 px-2.5"
-              asChild
-            >
-              <Link href="/dashboard/active-service">
-                <ClipboardList className="size-4" />
-                <span className="hidden sm:inline">{t.nav.activeService}</span>
-              </Link>
-            </Button>
+            {showActive && (
+              <Button
+                variant={
+                  pathname.startsWith("/dashboard/active-service")
+                    ? "secondary"
+                    : "ghost"
+                }
+                size="sm"
+                className="h-8 gap-1.5 px-2.5"
+                asChild
+              >
+                <Link href="/dashboard/active-service">
+                  <ClipboardList className="size-4" />
+                  <span className="hidden sm:inline">{t.nav.activeService}</span>
+                </Link>
+              </Button>
+            )}
           </nav>
 
           <div className="flex items-center gap-2">

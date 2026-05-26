@@ -1,38 +1,31 @@
 import type { AuthUser } from "@/types";
+import {
+  canAccessReception,
+  canAccessPos,
+  getStaffPaths,
+  getPostLoginPath,
+  isStaffOnlyUser,
+  canAccessStaffPath,
+  STAFF_PATH_PREFIXES,
+} from "@/lib/user-capabilities";
 
-/** موظف استقبال — استقبال السيارات وإدخال الخدمة */
+export {
+  canAccessReception,
+  canAccessPos,
+  getStaffPaths,
+  getPostLoginPath,
+  isStaffOnlyUser,
+  canAccessStaffPath,
+  STAFF_PATH_PREFIXES,
+};
+
+/** @deprecated استخدم canAccessReception */
 export function isReceptionistUser(user: AuthUser | null): boolean {
-  if (!user) return false;
-  if (user.role === "Owner") return false;
-
-  const position = (user.position || "").toLowerCase();
-  const role = (user.role || "").toLowerCase();
-
-  return (
-    position === "receptionist" ||
-    role === "receptionist" ||
-    role.includes("استقبال")
-  );
+  return canAccessReception(user);
 }
 
 export function isWorkshopStaffUser(user: AuthUser | null): boolean {
-  return isReceptionistUser(user) || isAccountantUser(user);
-}
-
-function isAccountantUser(user: AuthUser | null): boolean {
-  if (!user) return false;
-  if (user.role === "Owner") return false;
-  const position = (user.position || "").toLowerCase();
-  const role = (user.role || "").toLowerCase();
-  return (
-    position === "accountant" ||
-    role === "accountant" ||
-    role.includes("محاسب")
-  );
-}
-
-export function canAccessReception(user: AuthUser | null): boolean {
-  return isReceptionistUser(user);
+  return canAccessReception(user) || canAccessPos(user);
 }
 
 export const RECEPTIONIST_PATHS = [
@@ -44,9 +37,3 @@ export const ACCOUNTANT_PATHS = [
   "/dashboard/pos",
   "/dashboard/active-service",
 ] as const;
-
-export function getPostLoginPath(user: AuthUser | null): string {
-  if (isReceptionistUser(user)) return "/dashboard/reception";
-  if (isAccountantUser(user)) return "/dashboard/pos";
-  return "/dashboard";
-}
