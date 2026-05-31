@@ -11,6 +11,7 @@ import {
   UserCog,
   Shield,
   Settings,
+  BarChart3,
 } from "lucide-react";
 import type { AuthUser } from "@/types";
 import {
@@ -19,6 +20,7 @@ import {
   canAccessActiveService,
   canAccessAdminDashboard,
   canAccessWorkspaceHome,
+  canAccessReports,
 } from "@/lib/user-capabilities";
 import { hasPosNavAccess, hasPosSellAccess } from "@/lib/pos-permissions";
 import {
@@ -26,7 +28,12 @@ import {
   hasReceptionistReadAccess,
 } from "@/lib/reception-permissions";
 
-export type NavGroupId = "overview" | "workshop" | "catalog" | "administration";
+export type NavGroupId =
+  | "overview"
+  | "workshop"
+  | "catalog"
+  | "reports"
+  | "administration";
 
 export type NavLabelKey = keyof typeof import("@/lib/i18n/ar").ar.nav;
 
@@ -48,6 +55,7 @@ export const NAV_GROUP_ORDER: NavGroupId[] = [
   "overview",
   "workshop",
   "catalog",
+  "reports",
   "administration",
 ];
 
@@ -121,6 +129,14 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     labelKey: "services",
     group: "catalog",
     isVisible: ({ hasPermission }) => hasPermission("services", "read"),
+  },
+  {
+    id: "reports",
+    href: "/dashboard/reports",
+    icon: BarChart3,
+    labelKey: "detailedReports",
+    group: "reports",
+    isVisible: ({ user }) => canAccessReports(user),
   },
   {
     id: "employees",

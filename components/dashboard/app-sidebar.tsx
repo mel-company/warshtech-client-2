@@ -38,6 +38,7 @@ const GROUP_LABEL_KEYS: Record<
   overview: "overview",
   workshop: "workshop",
   catalog: "catalog",
+  reports: "reports",
   administration: "administration",
 };
 

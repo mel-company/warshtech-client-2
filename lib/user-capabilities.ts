@@ -82,6 +82,11 @@ export function getStaffPaths(user: AuthUser | null): string[] {
 }
 
 /** لوحة إحصائيات الإدارة — للمالك ومديري النظام فقط */
+/** تقارير تفصيلية — نفس صلاحيات لوحة الإدارة */
+export function canAccessReports(user: AuthUser | null): boolean {
+  return canAccessAdminDashboard(user);
+}
+
 export function canAccessAdminDashboard(user: AuthUser | null): boolean {
   if (!user) return false;
   if (user.role === "Owner") return true;
