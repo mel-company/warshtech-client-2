@@ -342,6 +342,40 @@ export interface InvoiceFormData {
 }
 
 // -----------------------------------------------------------------------------
+// Vehicle Service Events
+// -----------------------------------------------------------------------------
+
+export type VehicleServiceEventType =
+  | 'OIL_CHANGE'
+  | 'REPAIR'
+  | 'PARTS_REPLACEMENT'
+  | 'INSPECTION'
+  | 'GENERAL_SERVICE'
+  | 'OTHER'
+
+export interface VehicleServiceEvent {
+  id: string
+  carId: string
+  userId: string | null
+  invoiceId: string | null
+  type: VehicleServiceEventType
+  title: string
+  mileage: number | null
+  notes: string | null
+  createdAt: string
+  user?: { id: string; name: string; phone: string } | null
+  invoice?: { id: string; invoiceNumber: string } | null
+}
+
+export interface CreateVehicleServiceEventData {
+  carId: string
+  type: VehicleServiceEventType
+  title: string
+  mileage?: number
+  notes?: string
+}
+
+// -----------------------------------------------------------------------------
 // Workspace/Settings Types
 // -----------------------------------------------------------------------------
 

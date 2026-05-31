@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  History,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +45,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
+import { VehicleTimeline } from "@/components/dashboard/vehicle-timeline";
 
 // =============================================================================
 // Customer Form Component
@@ -226,6 +228,59 @@ function CustomerForm({
 }
 
 // =============================================================================
+// Car Card with Service History
+// =============================================================================
+
+function CarCardWithHistory({ car }: { car: CarType }) {
+  const { t } = useTranslation();
+  const [showHistory, setShowHistory] = React.useState(false);
+
+  return (
+    <Card key={car.id} className="bg-background">
+      <CardContent className="p-3">
+        <div className="flex items-start gap-3">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Car className="size-5" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <p className="font-medium">{car.name}</p>
+            <p className="text-sm text-muted-foreground">{car.number}</p>
+            <div className="flex gap-2 text-xs text-muted-foreground">
+              <span>{car.model}</span>
+              <span>•</span>
+              <span>{car.color}</span>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mt-1 h-7 gap-1 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowHistory((v) => !v);
+              }}
+            >
+              <History className="size-3.5" />
+              {showHistory
+                ? t.vehicleEvents.hideHistory
+                : t.vehicleEvents.viewHistory}
+            </Button>
+          </div>
+        </div>
+        {showHistory && (
+          <div className="mt-3 border-t pt-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              {t.vehicleEvents.title}
+            </p>
+            <VehicleTimeline carId={car.id} />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// =============================================================================
 // Customer Row Component
 // =============================================================================
 
@@ -325,26 +380,7 @@ function CustomerRow({ customer, onEdit, onDelete, canWrite }: CustomerRowProps)
           <TableCell colSpan={4} className="bg-muted/30 p-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {customer.cars.map((car) => (
-                <Card key={car.id} className="bg-background">
-                  <CardContent className="p-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                        <Car className="size-5" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="font-medium">{car.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {car.number}
-                        </p>
-                        <div className="flex gap-2 text-xs text-muted-foreground">
-                          <span>{car.model}</span>
-                          <span>•</span>
-                          <span>{car.color}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <CarCardWithHistory key={car.id} car={car} />
               ))}
             </div>
           </TableCell>
@@ -360,16 +396,8 @@ function CustomerRow({ customer, onEdit, onDelete, canWrite }: CustomerRowProps)
 
 export function CustomersPage() {
   const { t } = useTranslation();
-  const { hasPermission, user } = useAuth();
+  const { hasPermission } = useAuth();
   const canWrite = hasPermission("customers", "write");
-
-  // Debug logging - remove after testing
-  React.useEffect(() => {
-    console.log('[DEBUG] User:', user);
-    console.log('[DEBUG] User role:', user?.role);
-    console.log('[DEBUG] User permissions:', user?.permissions);
-    console.log('[DEBUG] canWrite for customers:', canWrite);
-  }, [user, canWrite]);
 
   const [customers, setCustomers] = React.useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");

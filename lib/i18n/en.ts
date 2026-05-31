@@ -179,6 +179,21 @@ export const en = {
     },
   },
 
+  vehicleEvents: {
+    title: "Service history",
+    viewHistory: "View history",
+    hideHistory: "Hide history",
+    empty: "No service events recorded for this vehicle yet",
+    types: {
+      OIL_CHANGE: "Oil change",
+      REPAIR: "Repair",
+      PARTS_REPLACEMENT: "Parts",
+      INSPECTION: "Inspection",
+      GENERAL_SERVICE: "Service",
+      OTHER: "Other",
+    },
+  },
+
   products: {
     title: "Products & Stock",
     addNew: "Add New Product",
