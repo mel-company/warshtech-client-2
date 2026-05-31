@@ -416,6 +416,31 @@ export interface UpdateMaintenanceRulesData {
 }
 
 // -----------------------------------------------------------------------------
+// Notifications
+// -----------------------------------------------------------------------------
+
+export type NotificationType =
+  | 'MAINTENANCE_OVERDUE'
+  | 'MAINTENANCE_DUE_SOON'
+
+export interface AppNotification {
+  id: string
+  type: NotificationType
+  title: string
+  message: string
+  carId: string | null
+  readAt: string | null
+  createdAt: string
+  car?: {
+    id: string
+    name: string
+    number: string
+    model: string
+    customer?: { id: string; name: string; phone: string }
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Workspace/Settings Types
 // -----------------------------------------------------------------------------
 

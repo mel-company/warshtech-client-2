@@ -35,6 +35,7 @@ export const en = {
     invoices: "Invoices",
     pos: "Point of Sale",
     activeService: "In Workshop",
+    maintenance: "Maintenance Schedule",
     reception: "Reception",
     reports: "Reports",
     detailedReports: "Detailed reports",
@@ -212,6 +213,29 @@ export const en = {
       ok: "On track",
       unknown: "Not set",
     },
+  },
+
+  maintenancePage: {
+    title: "Maintenance Schedule",
+    subtitle: "Upcoming and overdue service appointments across all vehicles",
+    searchPlaceholder: "Search by car, plate, or customer...",
+    empty: "No vehicles match this filter",
+    emptyHint: "Complete invoices with mileage to build maintenance schedules",
+    count: "{count} vehicle(s)",
+    runScan: "Generate alerts",
+    scanDone: "{count} new alert(s) created",
+    filters: {
+      overdue: "Overdue",
+      week: "This week",
+      month: "This month",
+    },
+  },
+
+  notifications: {
+    title: "Notifications",
+    empty: "No notifications yet",
+    markAllRead: "Mark all read",
+    viewAll: "View maintenance schedule",
   },
 
   products: {

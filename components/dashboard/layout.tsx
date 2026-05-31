@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
+import { NotificationBell } from '@/components/dashboard/notification-bell'
 import {
   buildNavContextFromUser,
   canAccessPath,
@@ -82,7 +83,10 @@ function DashboardHeader() {
       </SidebarTrigger>
       <div className="flex flex-1 items-center justify-between">
         <h1 className="text-lg font-semibold">{title}</h1>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <ThemeToggle />
+        </div>
       </div>
     </header>
   )

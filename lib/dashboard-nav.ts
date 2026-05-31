@@ -12,6 +12,7 @@ import {
   Shield,
   Settings,
   BarChart3,
+  CalendarClock,
 } from "lucide-react";
 import type { AuthUser } from "@/types";
 import {
@@ -97,6 +98,14 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     labelKey: "activeService",
     group: "workshop",
     isVisible: ({ user }) => canAccessActiveService(user),
+  },
+  {
+    id: "maintenance",
+    href: "/dashboard/maintenance",
+    icon: CalendarClock,
+    labelKey: "maintenance",
+    group: "workshop",
+    isVisible: ({ hasPermission }) => hasPermission("customers", "read"),
   },
   {
     id: "invoices",
