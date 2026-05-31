@@ -7,9 +7,13 @@ import { useAuth } from "@/lib/auth";
 import { getTenantId } from "@/lib/api";
 import {
   REALTIME_NAMESPACE,
+  REALTIME_EVENTS,
   getRealtimeBaseUrl,
   type RealtimeEventName,
 } from "./config";
+
+export { REALTIME_EVENTS, REALTIME_NAMESPACE, getRealtimeBaseUrl };
+export type { RealtimeEventName };
 
 type RealtimeHandler = (data: unknown) => void;
 
