@@ -17,6 +17,8 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { fetchVehicleEvents } from "@/lib/vehicle-events-api";
+import { REALTIME_EVENTS, useRealtimeEvent } from "@/lib/realtime";
+import { normalizeVehicleEvent } from "@/lib/realtime/normalize";
 import type { VehicleServiceEvent, VehicleServiceEventType } from "@/types";
 
 const TYPE_ICONS: Record<VehicleServiceEventType, LucideIcon> = {
@@ -86,6 +88,20 @@ export function VehicleTimeline({ carId, className }: VehicleTimelineProps) {
       cancelled = true;
     };
   }, [carId]);
+
+  useRealtimeEvent<VehicleServiceEvent>(
+    REALTIME_EVENTS.VEHICLE_EVENT_CREATED,
+    (data) => {
+      const event = normalizeVehicleEvent(data);
+      if (event.carId !== carId) return;
+      setEvents((prev) => {
+        if (prev.some((item) => item.id === event.id)) return prev;
+        return [event, ...prev];
+      });
+      setError(false);
+      setIsLoading(false);
+    },
+  );
 
   if (isLoading) {
     return (

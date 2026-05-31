@@ -16,6 +16,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { fetchUpcomingMaintenance } from "@/lib/maintenance-api";
 import { triggerMaintenanceScan } from "@/lib/notifications-api";
+import { REALTIME_EVENTS, useRealtimeEvent } from "@/lib/realtime";
 import type { MaintenanceFilter, MaintenanceUrgency, VehicleMaintenance } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,21 +123,29 @@ export function MaintenancePage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isScanning, setIsScanning] = React.useState(false);
 
-  const load = React.useCallback(async () => {
+  const load = React.useCallback(async (silent = false) => {
     try {
-      setIsLoading(true);
+      if (!silent) setIsLoading(true);
       const result = await fetchUpcomingMaintenance(filter);
       setItems(result.data);
     } catch {
-      toast.error(t.messages.error.fetchFailed);
+      if (!silent) toast.error(t.messages.error.fetchFailed);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [filter, t.messages.error.fetchFailed]);
 
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  useRealtimeEvent(REALTIME_EVENTS.MAINTENANCE_UPDATED, () => {
+    void load(true);
+  });
+
+  useRealtimeEvent(REALTIME_EVENTS.NOTIFICATION_CREATED, () => {
+    void load(true);
+  });
 
   const filtered = React.useMemo(() => {
     const q = search.trim().toLowerCase();

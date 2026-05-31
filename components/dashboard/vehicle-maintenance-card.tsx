@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { fetchVehicleMaintenance } from "@/lib/maintenance-api";
+import { REALTIME_EVENTS, useRealtimeEvent } from "@/lib/realtime";
 import type { MaintenanceUrgency, VehicleMaintenance } from "@/types";
 
 const URGENCY_STYLES: Record<
@@ -114,6 +115,16 @@ export function VehicleMaintenanceCard({
       cancelled = true;
     };
   }, [carId]);
+
+  useRealtimeEvent<VehicleMaintenance>(
+    REALTIME_EVENTS.MAINTENANCE_UPDATED,
+    (payload) => {
+      if (payload.carId !== carId) return;
+      setData(payload);
+      setError(false);
+      setIsLoading(false);
+    },
+  );
 
   if (isLoading) {
     return (

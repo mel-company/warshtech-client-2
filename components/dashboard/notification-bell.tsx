@@ -8,6 +8,11 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import {
+  REALTIME_EVENTS,
+  useRealtimeEvent,
+} from "@/lib/realtime";
+import { normalizeNotification } from "@/lib/realtime/normalize";
+import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
@@ -26,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const POLL_MS = 60_000;
+const FALLBACK_POLL_MS = 5 * 60_000;
 
 function formatRelativeTime(iso: string, locale: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -103,7 +108,7 @@ export function NotificationBell() {
     void load();
     const interval = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
-    }, POLL_MS);
+    }, FALLBACK_POLL_MS);
     return () => window.clearInterval(interval);
   }, [load]);
 
@@ -113,6 +118,42 @@ export function NotificationBell() {
       void load().finally(() => setIsLoading(false));
     }
   }, [open, load]);
+
+  useRealtimeEvent<AppNotification>(
+    REALTIME_EVENTS.NOTIFICATION_CREATED,
+    (data) => {
+      const notification = normalizeNotification(data);
+      setItems((prev) => {
+        if (prev.some((item) => item.id === notification.id)) return prev;
+        return [notification, ...prev].slice(0, 20);
+      });
+      if (!notification.readAt) {
+        setUnreadCount((count) => count + 1);
+      }
+      toast.info(notification.title, { description: notification.message });
+    },
+  );
+
+  useRealtimeEvent<AppNotification>(
+    REALTIME_EVENTS.NOTIFICATION_UPDATED,
+    (data) => {
+      const notification = normalizeNotification(data);
+      setItems((prev) => {
+        const wasUnread = prev.find((item) => item.id === notification.id && !item.readAt);
+        const next = prev.map((item) =>
+          item.id === notification.id ? notification : item,
+        );
+        if (wasUnread && notification.readAt) {
+          setUnreadCount((count) => Math.max(0, count - 1));
+        }
+        return next;
+      });
+    },
+  );
+
+  useRealtimeEvent(REALTIME_EVENTS.NOTIFICATIONS_REFRESH, () => {
+    void load();
+  });
 
   const handleRead = async (id: string) => {
     try {
