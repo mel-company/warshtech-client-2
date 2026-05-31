@@ -194,6 +194,26 @@ export const en = {
     },
   },
 
+  maintenance: {
+    title: "Next service",
+    lastService: "Last service",
+    currentMileage: "Current mileage",
+    nextService: "Next service",
+    noSchedule: "Schedule not set",
+    noScheduleYet: "Complete a service to calculate the next appointment",
+    dueToday: "Due today",
+    daysRemaining: "In {days} days",
+    kmRemaining: "In {km} km",
+    overdueDays: "{days} days overdue",
+    overdueKm: "{km} km overdue",
+    urgency: {
+      overdue: "Overdue",
+      due_soon: "Due soon",
+      ok: "On track",
+      unknown: "Not set",
+    },
+  },
+
   products: {
     title: "Products & Stock",
     addNew: "Add New Product",
@@ -405,6 +425,8 @@ export const en = {
     confirmTitle: "Finish service?",
     confirmDescription:
       "Invoice for {name} will be marked completed and removed from this list.",
+    mileageLabel: "Current odometer (km)",
+    mileageHint: "Optional — used to calculate next service",
   },
 
   pos: {

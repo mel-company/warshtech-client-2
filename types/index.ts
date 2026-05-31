@@ -376,6 +376,46 @@ export interface CreateVehicleServiceEventData {
 }
 
 // -----------------------------------------------------------------------------
+// Vehicle Maintenance (Next Service Engine)
+// -----------------------------------------------------------------------------
+
+export type MaintenanceUrgency = 'overdue' | 'due_soon' | 'ok' | 'unknown'
+export type MaintenanceFilter = 'overdue' | 'week' | 'month'
+
+export interface VehicleMaintenance {
+  id: string
+  carId: string
+  lastServiceDate: string | null
+  lastServiceMileage: number | null
+  currentMileage: number | null
+  oilIntervalKm: number
+  oilIntervalDays: number
+  nextServiceDate: string | null
+  nextServiceMileage: number | null
+  urgency: MaintenanceUrgency
+  daysRemaining: number | null
+  kmRemaining: number | null
+  car?: {
+    id: string
+    name: string
+    number: string
+    model: string
+    color: string
+  }
+  customer?: {
+    id: string
+    name: string
+    phone: string
+  }
+}
+
+export interface UpdateMaintenanceRulesData {
+  oilIntervalKm?: number
+  oilIntervalDays?: number
+  currentMileage?: number
+}
+
+// -----------------------------------------------------------------------------
 // Workspace/Settings Types
 // -----------------------------------------------------------------------------
 

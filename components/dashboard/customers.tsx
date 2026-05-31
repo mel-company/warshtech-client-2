@@ -46,6 +46,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
 import { VehicleTimeline } from "@/components/dashboard/vehicle-timeline";
+import { VehicleMaintenanceCard } from "@/components/dashboard/vehicle-maintenance-card";
 
 // =============================================================================
 // Customer Form Component
@@ -265,6 +266,7 @@ function CarCardWithHistory({ car }: { car: CarType }) {
                 ? t.vehicleEvents.hideHistory
                 : t.vehicleEvents.viewHistory}
             </Button>
+            <VehicleMaintenanceCard carId={car.id} className="mt-2" />
           </div>
         </div>
         {showHistory && (

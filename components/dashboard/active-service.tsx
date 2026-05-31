@@ -70,6 +70,7 @@ export function ActiveServicePage() {
   const [confirmInvoice, setConfirmInvoice] = React.useState<Invoice | null>(
     null,
   );
+  const [completeMileage, setCompleteMileage] = React.useState("");
 
   const load = React.useCallback(async () => {
     try {
@@ -112,9 +113,17 @@ export function ActiveServicePage() {
     if (!canWrite) return;
     setCompletingId(invoice.id);
     try {
-      await updateInvoiceStatus(invoice.id, "COMPLETED");
+      const mileage = completeMileage.trim()
+        ? parseInt(completeMileage.trim(), 10)
+        : undefined;
+      await updateInvoiceStatus(
+        invoice.id,
+        "COMPLETED",
+        Number.isFinite(mileage) ? mileage : undefined,
+      );
       toast.success(t.activeService.completed);
       setConfirmInvoice(null);
+      setCompleteMileage("");
       await load();
     } catch (error) {
       console.error("Failed to complete invoice:", error);
@@ -272,7 +281,12 @@ export function ActiveServicePage() {
 
       <AlertDialog
         open={!!confirmInvoice}
-        onOpenChange={(open) => !open && setConfirmInvoice(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmInvoice(null);
+            setCompleteMileage("");
+          }
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -284,6 +298,23 @@ export function ActiveServicePage() {
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <label className="text-sm font-medium" htmlFor="complete-mileage">
+              {t.activeService.mileageLabel}
+            </label>
+            <Input
+              id="complete-mileage"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="85000"
+              value={completeMileage}
+              onChange={(e) => setCompleteMileage(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t.activeService.mileageHint}
+            </p>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel>{t.actions.cancel}</AlertDialogCancel>
             <AlertDialogAction

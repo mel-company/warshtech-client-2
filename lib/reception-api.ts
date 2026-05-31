@@ -149,6 +149,10 @@ export async function fetchActiveInvoices(): Promise<Invoice[]> {
 export async function updateInvoiceStatus(
   invoiceId: string,
   status: "PENDING" | "IN_SERVICE" | "COMPLETED" | "CANCELLED",
+  mileage?: number,
 ): Promise<Invoice> {
-  return apiClient.patch<Invoice>(`/invoices/${invoiceId}/status`, { status });
+  return apiClient.patch<Invoice>(`/invoices/${invoiceId}/status`, {
+    status,
+    ...(mileage !== undefined ? { mileage } : {}),
+  });
 }

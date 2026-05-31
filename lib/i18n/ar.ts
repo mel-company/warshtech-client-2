@@ -212,6 +212,26 @@ export const ar = {
     },
   },
 
+  maintenance: {
+    title: "الصيانة القادمة",
+    lastService: "آخر صيانة",
+    currentMileage: "العداد الحالي",
+    nextService: "الموعد القادم",
+    noSchedule: "لم يُحدد موعد",
+    noScheduleYet: "أكمل فاتورة صيانة لحساب الموعد القادم",
+    dueToday: "مستحق اليوم",
+    daysRemaining: "بعد {days} يوم",
+    kmRemaining: "بعد {km} كم",
+    overdueDays: "متأخر {days} يوم",
+    overdueKm: "متأخر {km} كم",
+    urgency: {
+      overdue: "متأخر",
+      due_soon: "قريب",
+      ok: "ضمن الموعد",
+      unknown: "غير محدد",
+    },
+  },
+
   // ---------------------------------------------------------------------------
   // Products / Stock
   // ---------------------------------------------------------------------------
@@ -445,6 +465,8 @@ export const ar = {
     confirmTitle: "إنهاء الخدمة؟",
     confirmDescription:
       "سيتم تحويل فاتورة {name} إلى مكتملة وإزالتها من قائمة الصيانة.",
+    mileageLabel: "قراءة العداد (كم)",
+    mileageHint: "اختياري — يُستخدم لحساب موعد الصيانة القادم",
   },
 
   pos: {
