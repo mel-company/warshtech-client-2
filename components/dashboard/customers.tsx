@@ -22,6 +22,10 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import type { Customer, Car as CarType, CustomerFormData } from "@/types";
 import apiClient from "@/lib/api";
+import {
+  filterWorkshopCars,
+  filterWorkshopCustomers,
+} from "@/lib/invoice-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -296,6 +300,10 @@ interface CustomerRowProps {
 function CustomerRow({ customer, onEdit, onDelete, canWrite }: CustomerRowProps) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = React.useState(false);
+  const workshopCars = React.useMemo(
+    () => filterWorkshopCars(customer.cars),
+    [customer.cars],
+  );
 
   const getInitials = (name: string) => {
     return name
@@ -329,7 +337,7 @@ function CustomerRow({ customer, onEdit, onDelete, canWrite }: CustomerRowProps)
         <TableCell className="hidden sm:table-cell">
           <Badge variant="secondary" className="gap-1">
             <Car className="size-3" />
-            {customer.cars.length}
+            {workshopCars.length}
           </Badge>
         </TableCell>
         <TableCell className="hidden md:table-cell">
@@ -377,14 +385,21 @@ function CustomerRow({ customer, onEdit, onDelete, canWrite }: CustomerRowProps)
           </div>
         </TableCell>
       </TableRow>
-      {isExpanded && customer.cars.length > 0 && (
+      {isExpanded && workshopCars.length > 0 && (
         <TableRow>
           <TableCell colSpan={4} className="bg-muted/30 p-4">
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {customer.cars.map((car) => (
+              {workshopCars.map((car) => (
                 <CarCardWithHistory key={car.id} car={car} />
               ))}
             </div>
+          </TableCell>
+        </TableRow>
+      )}
+      {isExpanded && workshopCars.length === 0 && (
+        <TableRow>
+          <TableCell colSpan={4} className="bg-muted/30 p-4 text-sm text-muted-foreground">
+            {t.customers.noCars}
           </TableCell>
         </TableRow>
       )}
@@ -434,20 +449,34 @@ export function CustomersPage() {
     }
   };
 
+  const workshopCustomers = React.useMemo(
+    () => filterWorkshopCustomers(customers),
+    [customers],
+  );
+
   const filteredCustomers = React.useMemo(() => {
-    if (!searchQuery) return customers;
+    if (!searchQuery) return workshopCustomers;
     const query = searchQuery.toLowerCase();
-    return customers.filter(
+    return workshopCustomers.filter(
       (c) =>
         c.name.toLowerCase().includes(query) ||
         c.phone.includes(query) ||
-        c.cars.some(
+        filterWorkshopCars(c.cars).some(
           (car) =>
             car.name.toLowerCase().includes(query) ||
             car.number.toLowerCase().includes(query),
         ),
     );
-  }, [customers, searchQuery]);
+  }, [workshopCustomers, searchQuery]);
+
+  const totalWorkshopCars = React.useMemo(
+    () =>
+      workshopCustomers.reduce(
+        (acc, c) => acc + filterWorkshopCars(c.cars).length,
+        0,
+      ),
+    [workshopCustomers],
+  );
 
   const handleAddNew = () => {
     setEditingCustomer(undefined);
@@ -544,9 +573,7 @@ export function CustomersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold">{t.customers.title}</h2>
-          <p className="text-muted-foreground">
-            إدارة بيانات العملاء وسياراتهم
-          </p>
+          <p className="text-muted-foreground">{t.customers.subtitle}</p>
         </div>
         {canWrite && (
           <Button onClick={handleAddNew}>
@@ -575,7 +602,7 @@ export function CustomersPage() {
               <User className="size-6" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{customers.length}</p>
+              <p className="text-2xl font-bold">{workshopCustomers.length}</p>
               <p className="text-sm text-muted-foreground">إجمالي العملاء</p>
             </div>
           </CardContent>
@@ -586,9 +613,7 @@ export function CustomersPage() {
               <Car className="size-6" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
-                {customers?.reduce((acc, c) => acc + c.cars.length, 0)}
-              </p>
+              <p className="text-2xl font-bold">{totalWorkshopCars}</p>
               <p className="text-sm text-muted-foreground">إجمالي السيارات</p>
             </div>
           </CardContent>
@@ -600,7 +625,7 @@ export function CustomersPage() {
             </div>
             <div>
               <p className="text-2xl font-bold">
-                {customers?.reduce((acc, c) => acc + c.usageCount, 0)}
+                {workshopCustomers.reduce((acc, c) => acc + c.usageCount, 0)}
               </p>
               <p className="text-sm text-muted-foreground">إجمالي الزيارات</p>
             </div>

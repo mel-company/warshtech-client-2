@@ -16,6 +16,7 @@ import {
   CalendarClock,
 } from "lucide-react";
 import type { AuthUser } from "@/types";
+import { canManageCompanies } from "@/lib/companies-access";
 import {
   canAccessReception,
   canAccessPos,
@@ -130,7 +131,7 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     icon: Building2,
     labelKey: "companies",
     group: "catalog",
-    isVisible: ({ hasPermission }) => hasPermission("companies", "read"),
+    isVisible: ({ user }) => canManageCompanies(user),
   },
   {
     id: "products",

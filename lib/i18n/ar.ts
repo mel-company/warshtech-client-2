@@ -178,6 +178,8 @@ export const ar = {
   // ---------------------------------------------------------------------------
   customers: {
     title: "العملاء",
+    subtitle:
+      "زبائن الورشة والاستقبال — شخص وسياراته (مو الشركات ولا بيع الكاشير)",
     addNew: "إضافة عميل جديد",
     editCustomer: "تعديل بيانات العميل",
     deleteCustomer: "حذف العميل",
@@ -201,7 +203,7 @@ export const ar = {
 
   companies: {
     title: "الشركات",
-    subtitle: "شركات وعملاء B2B — تُستخدم في نقطة البيع",
+    subtitle: "شركات B2B — للفواتير والمحاسبة (إدارة منفصلة عن زبائن الورشة)",
     addNew: "إضافة شركة",
     editCompany: "تعديل الشركة",
     deleteCompany: "حذف الشركة",
@@ -536,7 +538,7 @@ export const ar = {
     buyerType: "نوع البيع",
     cashCustomer: "زبون نقدي",
     registeredCustomer: "شركة",
-    cashHint: "بيع مباشر بدون تسجيل — اختياري: اسم للملاحظة",
+    cashHint: "بيع مباشر — اختياري: اسم للملاحظة على الفاتورة",
     cashNoteName: "اسم الزبون (اختياري)",
     searchCompany: "ابحث عن شركة أو عميل...",
     selectCompany: "اختر العميل من النتائج",
@@ -553,6 +555,9 @@ export const ar = {
     deleteConfirm: "هل أنت متأكد من حذف هذه الفاتورة؟",
     invoiceNumber: "رقم الفاتورة",
     customer: "العميل",
+    buyer: "المشتري",
+    buyerCompany: "الشركة",
+    cashBuyer: "زبون نقدي",
     car: "السيارة",
     services: "الخدمات",
     products: "المنتجات",

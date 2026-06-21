@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
+import { canManageCompanies } from "@/lib/companies-access";
 import type { Company, CompanyFormData } from "@/types";
 import apiClient from "@/lib/api";
 import { extractListData } from "@/lib/list-response";
@@ -121,8 +122,8 @@ function CompanyForm({
 
 export function CompaniesPage() {
   const { t } = useTranslation();
-  const { hasPermission } = useAuth();
-  const canWrite = hasPermission("companies", "write");
+  const { user } = useAuth();
+  const canWrite = canManageCompanies(user);
 
   const [companies, setCompanies] = React.useState<Company[]>([]);
   const [searchQuery, setSearchQuery] = React.useState("");

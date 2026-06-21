@@ -11,6 +11,12 @@ import {
   Font,
 } from "@react-pdf/renderer";
 import type { Invoice } from "@/types";
+import {
+  getInvoiceBuyerKind,
+  getInvoiceBuyerName,
+  getInvoiceBuyerPhone,
+  shouldHideInvoiceCar,
+} from "@/lib/invoice-display";
 
 // Register an Arabic-compatible font
 Font.register({
@@ -327,10 +333,19 @@ export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "", wor
         {/* Customer & Car Info */}
         <View style={styles.infoGrid}>
           <View style={styles.infoCard}>
-            <Text style={styles.infoCardIcon}>العميل</Text>
-            <Text style={styles.infoValue}>{invoice.customer.name}</Text>
-            <Text style={styles.infoSub}>{invoice.customer.phone}</Text>
+            <Text style={styles.infoCardIcon}>
+              {getInvoiceBuyerKind(invoice) === "company"
+                ? "الشركة"
+                : getInvoiceBuyerKind(invoice) === "cash"
+                  ? "زبون نقدي"
+                  : "العميل"}
+            </Text>
+            <Text style={styles.infoValue}>{getInvoiceBuyerName(invoice)}</Text>
+            {getInvoiceBuyerPhone(invoice) ? (
+              <Text style={styles.infoSub}>{getInvoiceBuyerPhone(invoice)}</Text>
+            ) : null}
           </View>
+          {!shouldHideInvoiceCar(invoice) && (
           <View style={styles.infoCard}>
             <Text style={styles.infoCardIcon}>السيارة</Text>
             <Text style={styles.infoValue}>
@@ -341,6 +356,7 @@ export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "", wor
               {invoice.car.model}  {invoice.car.color}
             </Text>
           </View>
+          )}
         </View>
 
         {/* Services Table */}

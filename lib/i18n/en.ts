@@ -160,6 +160,8 @@ export const en = {
 
   customers: {
     title: "Customers",
+    subtitle:
+      "Workshop & reception clients — people with vehicles (not companies or POS cash sales)",
     addNew: "Add New Customer",
     editCustomer: "Edit Customer",
     deleteCustomer: "Delete Customer",
@@ -183,7 +185,7 @@ export const en = {
 
   companies: {
     title: "Companies",
-    subtitle: "B2B clients used at the point of sale",
+    subtitle: "B2B companies — invoicing & accounting (separate from workshop customers)",
     addNew: "Add company",
     editCompany: "Edit company",
     deleteCompany: "Delete company",
@@ -496,7 +498,7 @@ export const en = {
     buyerType: "Sale type",
     cashCustomer: "Cash / walk-in",
     registeredCustomer: "Company",
-    cashHint: "Quick sale — optional name for invoice notes",
+    cashHint: "Walk-in sale — optional name on the invoice",
     cashNoteName: "Customer name (optional)",
     searchCompany: "Search company or customer...",
     selectCompany: "Pick a customer from results",
@@ -513,6 +515,9 @@ export const en = {
     deleteConfirm: "Are you sure you want to delete this invoice?",
     invoiceNumber: "Invoice Number",
     customer: "Customer",
+    buyer: "Buyer",
+    buyerCompany: "Company",
+    cashBuyer: "Cash customer",
     car: "Car",
     services: "Services",
     products: "Products",

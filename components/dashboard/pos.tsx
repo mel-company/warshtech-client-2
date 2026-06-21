@@ -8,12 +8,12 @@ import {
   ShoppingCart,
   Trash2,
   User,
-  CheckCircle,
   Loader2,
   Banknote,
   RotateCcw,
   Building2,
   UserCircle,
+  CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,14 +21,11 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import apiClient from "@/lib/api";
+import { canPickCompanyInPos } from "@/lib/companies-access";
 import { getPosPermissionGaps } from "@/lib/pos-permissions";
 import { canSellFromPos } from "@/lib/user-capabilities";
 import { extractListData } from "@/lib/list-response";
-import {
-  resolveCashPosSale,
-  resolveCompanyPosSale,
-  type PosBuyerType,
-} from "@/lib/pos-checkout";
+import { resolveCashPosSale, resolveCompanyPosSale, type PosBuyerType } from "@/lib/pos-checkout";
 import type {
   Company,
   InvoiceFormProduct,
@@ -52,6 +49,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function PosPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const canPickCompany = canPickCompanyInPos(user);
   const permissionGaps = React.useMemo(
     () => getPosPermissionGaps(user?.permissions ?? []),
     [user?.permissions],
@@ -65,16 +63,12 @@ export function PosPage() {
   const [catalogError, setCatalogError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const [buyerType, setBuyerType] = React.useState<PosBuyerType>("cash");
   const [cashNoteName, setCashNoteName] = React.useState("");
-
+  const [buyerType, setBuyerType] = React.useState<PosBuyerType>("cash");
+  const [companies, setCompanies] = React.useState<Company[]>([]);
   const [companySearch, setCompanySearch] = React.useState("");
-  const [companyResults, setCompanyResults] = React.useState<Company[]>([]);
-  const [isSearchingCompany, setIsSearchingCompany] = React.useState(false);
-  const [selectedCompany, setSelectedCompany] = React.useState<Company | null>(
-    null,
-  );
-
+  const [selectedCompanyId, setSelectedCompanyId] = React.useState<string | null>(null);
+  const [isLoadingCompanies, setIsLoadingCompanies] = React.useState(false);
   const [customerOpen, setCustomerOpen] = React.useState(true);
 
   const [selectedServices, setSelectedServices] = React.useState<InvoiceFormService[]>([]);
@@ -127,44 +121,50 @@ export function PosPage() {
   }, [t.pos.catalogEmpty, t.pos.catalogForbidden]);
 
   React.useEffect(() => {
-    if (buyerType !== "company") return;
-    const q = companySearch.trim();
-    if (q.length < 2) {
-      setCompanyResults([]);
+    if (!canPickCompany) {
+      setBuyerType("cash");
+      setCompanies([]);
+      setSelectedCompanyId(null);
       return;
     }
-    setIsSearchingCompany(true);
-    const timeout = setTimeout(async () => {
+    const loadCompanies = async () => {
+      setIsLoadingCompanies(true);
       try {
-        const res = await apiClient.get<{ data: Company[] }>(
-          `/companies?search=${encodeURIComponent(q)}&take=8`,
-        );
-        setCompanyResults(extractListData(res));
-      } catch {
-        setCompanyResults([]);
+        const res = await apiClient.get<{ data: Company[] }>("/companies?take=500");
+        setCompanies(extractListData(res));
+      } catch (error) {
+        console.error("POS companies load failed:", error);
       } finally {
-        setIsSearchingCompany(false);
+        setIsLoadingCompanies(false);
       }
-    }, 400);
-    return () => clearTimeout(timeout);
-  }, [companySearch, buyerType]);
+    };
+    void loadCompanies();
+  }, [canPickCompany]);
 
-  const selectCompany = React.useCallback((company: Company) => {
-    setSelectedCompany(company);
-    setCompanySearch(company.name);
-    setCompanyResults([]);
-  }, []);
+  const filteredCompanies = React.useMemo(() => {
+    const q = companySearch.trim().toLowerCase();
+    if (!q) return companies;
+    return companies.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        (c.phone && c.phone.includes(q)),
+    );
+  }, [companies, companySearch]);
 
-  const resetCustomerSection = React.useCallback(() => {
-    setCashNoteName("");
-    setCompanySearch("");
-    setCompanyResults([]);
-    setSelectedCompany(null);
-  }, []);
+  const selectedCompany = React.useMemo(
+    () => companies.find((c) => c.id === selectedCompanyId) ?? null,
+    [companies, selectedCompanyId],
+  );
+
+  const customerReady =
+    buyerType === "cash" || (buyerType === "company" && !!selectedCompanyId);
 
   const handleBuyerTypeChange = (type: PosBuyerType) => {
     setBuyerType(type);
-    resetCustomerSection();
+    if (type === "cash") {
+      setSelectedCompanyId(null);
+      setCompanySearch("");
+    }
   };
 
   const filteredProducts = React.useMemo(() => {
@@ -235,26 +235,23 @@ export function PosPage() {
     setSelectedProducts([]);
     setFinalPrice(0);
     setSearch("");
-    resetCustomerSection();
+    setCashNoteName("");
+    setBuyerType("cash");
+    setSelectedCompanyId(null);
+    setCompanySearch("");
   };
-
-  const step1Valid =
-    buyerType === "cash" ? true : !!selectedCompany;
 
   const handleCheckout = async () => {
     if (!canSell) {
       toast.error(t.pos.cannotSell);
       return;
     }
-    if (!step1Valid) {
-      toast.error(
-        buyerType === "cash" ? t.pos.completeCustomer : t.pos.completeCompany,
-      );
-      setCustomerOpen(true);
-      return;
-    }
     if (selectedServices.length === 0 && selectedProducts.length === 0) {
       toast.error(t.pos.addItems);
+      return;
+    }
+    if (buyerType === "company" && !selectedCompanyId) {
+      toast.error(t.pos.completeCompany);
       return;
     }
     if (finalPrice < minPrice) {
@@ -265,14 +262,14 @@ export function PosPage() {
     setIsSubmitting(true);
     try {
       const resolved =
-        buyerType === "cash"
-          ? await resolveCashPosSale({ noteName: cashNoteName })
-          : await resolveCompanyPosSale(selectedCompany!.id);
+        buyerType === "company" && selectedCompanyId
+          ? await resolveCompanyPosSale(selectedCompanyId)
+          : await resolveCashPosSale({ noteName: cashNoteName });
 
-      await apiClient.post("/invoices", {
+      const created = await apiClient.post<{ id: string }>("/invoices", {
         customerId: resolved.customerId,
         carId: resolved.carId,
-        companyId: "companyId" in resolved ? resolved.companyId : undefined,
+        ...(resolved.companyId ? { companyId: resolved.companyId } : {}),
         services: selectedServices.map((s) => ({
           serviceId: s.serviceId,
           price: s.price,
@@ -283,7 +280,11 @@ export function PosPage() {
           unitPrice: p.unitPrice,
         })),
         finalPrice,
-        notes: "notes" in resolved ? resolved.notes : undefined,
+        notes: resolved.notes,
+      });
+
+      await apiClient.patch(`/invoices/${created.id}/status`, {
+        status: "COMPLETED",
       });
 
       toast.success(t.pos.saleComplete);
@@ -314,7 +315,6 @@ export function PosPage() {
         </div>
       )}
     <div className="grid h-[calc(100vh-8rem)] gap-4 lg:grid-cols-[1fr_380px]">
-      {/* Catalog */}
       <Card className="flex min-h-0 flex-col overflow-hidden border-0 shadow-md">
         <CardHeader className="shrink-0 space-y-3 border-b pb-4">
           <div className="relative">
@@ -427,7 +427,6 @@ export function PosPage() {
         </CardContent>
       </Card>
 
-      {/* Cart */}
       <Card className="flex min-h-0 flex-col border-0 shadow-md">
         <CardHeader className="shrink-0 border-b pb-3">
           <CardTitle className="flex items-center justify-between text-base">
@@ -446,43 +445,56 @@ export function PosPage() {
             <CollapsibleTrigger asChild>
               <Button variant="outline" className="w-full justify-between">
                 <span className="flex items-center gap-2">
-                  <User className="size-4" />
-                  {t.pos.customerSection}
+                  {buyerType === "company" ? (
+                    <Building2 className="size-4" />
+                  ) : (
+                    <User className="size-4" />
+                  )}
+                  {buyerType === "company"
+                    ? selectedCompany?.name ?? t.pos.registeredCustomer
+                    : t.pos.cashCustomer}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {step1Valid ? t.pos.ready : t.pos.required}
+                <span
+                  className={cn(
+                    "text-xs",
+                    customerReady ? "text-muted-foreground" : "text-destructive",
+                  )}
+                >
+                  {customerReady ? t.pos.ready : t.pos.required}
                 </span>
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-3 rounded-lg border bg-muted/30 p-3">
-              <div className="space-y-2">
-                <Label className="text-xs">{t.pos.buyerType}</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant={buyerType === "cash" ? "default" : "outline"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => handleBuyerTypeChange("cash")}
-                  >
-                    <UserCircle className="size-4" />
-                    {t.pos.cashCustomer}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={buyerType === "company" ? "default" : "outline"}
-                    size="sm"
-                    className="gap-1.5"
-                    onClick={() => handleBuyerTypeChange("company")}
-                  >
-                    <Building2 className="size-4" />
-                    {t.pos.registeredCustomer}
-                  </Button>
+              {canPickCompany && (
+                <div className="space-y-2">
+                  <Label className="text-xs">{t.pos.buyerType}</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      type="button"
+                      variant={buyerType === "cash" ? "default" : "outline"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => handleBuyerTypeChange("cash")}
+                    >
+                      <UserCircle className="size-4" />
+                      {t.pos.cashCustomer}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={buyerType === "company" ? "default" : "outline"}
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => handleBuyerTypeChange("company")}
+                    >
+                      <Building2 className="size-4" />
+                      {t.pos.registeredCustomer}
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {buyerType === "cash" ? (
-                <div className="space-y-2">
+                <>
                   <p className="text-xs text-muted-foreground">{t.pos.cashHint}</p>
                   <div className="space-y-1">
                     <Label className="text-xs">{t.pos.cashNoteName}</Label>
@@ -492,70 +504,54 @@ export function PosPage() {
                       placeholder={t.pos.cashNoteName}
                     />
                   </div>
-                </div>
+                </>
               ) : (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t.pos.searchCompany}</Label>
-                    <div className="relative">
-                      <Input
-                        value={companySearch}
-                        onChange={(e) => {
-                          setCompanySearch(e.target.value);
-                          if (
-                            selectedCompany &&
-                            e.target.value.trim() !== selectedCompany.name
-                          ) {
-                            setSelectedCompany(null);
-                          }
-                        }}
-                        placeholder={t.pos.searchCompany}
-                      />
-                      {isSearchingCompany && (
-                        <Loader2 className="absolute end-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
-                      )}
+                <div className="space-y-2">
+                  <Label className="text-xs">{t.pos.searchCompany}</Label>
+                  <Input
+                    value={companySearch}
+                    onChange={(e) => setCompanySearch(e.target.value)}
+                    placeholder={t.pos.searchCompany}
+                  />
+                  {isLoadingCompanies ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 className="size-5 animate-spin text-muted-foreground" />
                     </div>
-                    {companyResults.length > 0 && !selectedCompany && (
-                      <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border bg-background p-1">
-                        {companyResults.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            className="flex w-full flex-col rounded-md px-2 py-1.5 text-start text-sm hover:bg-muted"
-                            onClick={() => selectCompany(c)}
-                          >
-                            <span className="font-medium">{c.name}</span>
-                            {c.phone && (
-                              <span className="text-xs text-muted-foreground" dir="ltr">
-                                {c.phone}
-                              </span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {companySearch.trim().length >= 2 &&
-                      !isSearchingCompany &&
-                      companyResults.length === 0 &&
-                      !selectedCompany && (
-                        <p className="text-xs text-muted-foreground">
-                          {t.pos.noCompaniesFound}
-                        </p>
-                      )}
-                  </div>
-
-                  {selectedCompany && (
-                    <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2 text-sm">
-                      <CheckCircle className="size-4 shrink-0 text-primary" />
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{selectedCompany.name}</p>
-                        {selectedCompany.phone && (
-                          <p className="text-xs text-muted-foreground" dir="ltr">
-                            {selectedCompany.phone}
+                  ) : (
+                    <ScrollArea className="max-h-40 rounded-md border bg-background">
+                      <div className="p-1">
+                        {filteredCompanies.length === 0 ? (
+                          <p className="px-2 py-3 text-center text-xs text-muted-foreground">
+                            {t.pos.noCompaniesFound}
                           </p>
+                        ) : (
+                          filteredCompanies.map((company) => {
+                            const selected = selectedCompanyId === company.id;
+                            return (
+                              <button
+                                key={company.id}
+                                type="button"
+                                onClick={() => setSelectedCompanyId(company.id)}
+                                className={cn(
+                                  "flex w-full items-center justify-between gap-2 rounded-md px-2 py-2 text-start text-sm transition-colors hover:bg-muted",
+                                  selected && "bg-primary/10 ring-1 ring-primary/30",
+                                )}
+                              >
+                                <span className="min-w-0 truncate font-medium">
+                                  {company.name}
+                                </span>
+                                {selected && (
+                                  <CheckCircle className="size-4 shrink-0 text-primary" />
+                                )}
+                              </button>
+                            );
+                          })
                         )}
                       </div>
-                    </div>
+                    </ScrollArea>
+                  )}
+                  {!selectedCompanyId && (
+                    <p className="text-xs text-muted-foreground">{t.pos.selectCompany}</p>
                   )}
                 </div>
               )}
@@ -644,7 +640,7 @@ export function PosPage() {
                 type="button"
                 className="gap-2"
                 onClick={handleCheckout}
-                disabled={isSubmitting || !canSell}
+                disabled={isSubmitting || !canSell || !customerReady}
                 title={!canSell ? t.pos.cannotSell : undefined}
               >
                 {isSubmitting ? (
@@ -662,4 +658,3 @@ export function PosPage() {
     </div>
   );
 }
-

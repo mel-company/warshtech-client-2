@@ -230,8 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (resource: string, level: "read" | "write"): boolean => {
       if (!state.user) return false;
 
-      // Owner users have unlimited access (unchangeable role for workshop creator)
-      if (state.user.role === 'Owner') {
+      if (state.user.role === "Owner") {
         return true;
       }
 

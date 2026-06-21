@@ -16,7 +16,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { cn } from "@/lib/utils";
+import {
+  getInvoiceBuyerName,
+  getInvoiceBuyerPhone,
+} from "@/lib/invoice-display";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { fetchActiveInvoices, updateInvoiceStatus } from "@/lib/reception-api";
@@ -191,15 +194,17 @@ export function ActiveServicePage() {
                   <div>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <User className="size-4 text-primary" />
-                      {invoice.customer.name}
+                      {getInvoiceBuyerName(invoice)}
                     </CardTitle>
+                    {getInvoiceBuyerPhone(invoice) && (
                     <p
                       className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
                       dir="ltr"
                     >
                       <Phone className="size-3" />
-                      {invoice.customer.phone}
+                      {getInvoiceBuyerPhone(invoice)}
                     </p>
+                    )}
                   </div>
                   <Badge
                     variant="outline"
@@ -294,7 +299,7 @@ export function ActiveServicePage() {
             <AlertDialogDescription>
               {t.activeService.confirmDescription.replace(
                 "{name}",
-                confirmInvoice?.customer.name ?? "",
+                confirmInvoice ? getInvoiceBuyerName(confirmInvoice) : "",
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

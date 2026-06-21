@@ -42,6 +42,13 @@ import type {
 } from "@/types";
 import apiClient from "@/lib/api";
 import { extractListData } from "@/lib/list-response";
+import {
+  getInvoiceBuyerKind,
+  getInvoiceBuyerName,
+  getInvoiceBuyerPhone,
+  shouldHideInvoiceCar,
+  invoiceMatchesSearch,
+} from "@/lib/invoice-display";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -999,15 +1006,27 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
           <StatusBadge status={invoice.status} />
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">{t.invoices.customer}</p>
-          <p className="font-medium">{invoice.customer.name}</p>
-          <p className="text-xs text-muted-foreground" dir="ltr">{invoice.customer.phone}</p>
+          <p className="text-sm text-muted-foreground">
+            {getInvoiceBuyerKind(invoice) === "company"
+              ? t.invoices.buyerCompany
+              : getInvoiceBuyerKind(invoice) === "cash"
+                ? t.invoices.cashBuyer
+                : t.invoices.customer}
+          </p>
+          <p className="font-medium">{getInvoiceBuyerName(invoice)}</p>
+          {getInvoiceBuyerPhone(invoice) && (
+            <p className="text-xs text-muted-foreground" dir="ltr">
+              {getInvoiceBuyerPhone(invoice)}
+            </p>
+          )}
         </div>
+        {!shouldHideInvoiceCar(invoice) && (
         <div>
           <p className="text-sm text-muted-foreground">{t.invoices.car}</p>
           <p className="font-medium">{invoice.car.name} - {invoice.car.number}</p>
           <p className="text-xs text-muted-foreground">{invoice.car.model} • {invoice.car.color}</p>
         </div>
+        )}
       </div>
 
       {invoice.services.length > 0 && (
@@ -1136,17 +1155,26 @@ function InvoiceRow({ invoice, onView, onEdit, onStatusChange, onDelete, canWrit
       </TableCell>
       <TableCell>
         <div className="flex flex-col">
-          <span className="font-medium">{invoice.customer.name}</span>
-          <span className="text-xs text-muted-foreground" dir="ltr">
-            {invoice.customer.phone}
-          </span>
+          <span className="font-medium">{getInvoiceBuyerName(invoice)}</span>
+          {getInvoiceBuyerKind(invoice) === "company" && (
+            <span className="text-xs text-primary">{t.invoices.buyerCompany}</span>
+          )}
+          {getInvoiceBuyerPhone(invoice) && (
+            <span className="text-xs text-muted-foreground" dir="ltr">
+              {getInvoiceBuyerPhone(invoice)}
+            </span>
+          )}
         </div>
       </TableCell>
       <TableCell className="hidden sm:table-cell">
+        {shouldHideInvoiceCar(invoice) ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
         <div className="flex flex-col">
           <span className="text-sm">{invoice.car.name}</span>
           <span className="text-xs text-muted-foreground">{invoice.car.number}</span>
         </div>
+        )}
       </TableCell>
       <TableCell className="hidden md:table-cell">
         <span className="font-medium">
@@ -1250,14 +1278,7 @@ export function InvoicesPage() {
 
   const filteredInvoices = React.useMemo(() => {
     if (!searchQuery) return invoices;
-    const query = searchQuery.toLowerCase();
-    return invoices.filter(
-      (inv) =>
-        inv.invoiceNumber.toLowerCase().includes(query) ||
-        inv.customer.name.toLowerCase().includes(query) ||
-        inv.customer.phone.includes(query) ||
-        inv.car.number.toLowerCase().includes(query),
-    );
+    return invoices.filter((inv) => invoiceMatchesSearch(inv, searchQuery));
   }, [invoices, searchQuery]);
 
   const handleSubmit = async (data: any) => {
@@ -1433,7 +1454,7 @@ export function InvoicesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t.invoices.invoiceNumber}</TableHead>
-                  <TableHead>{t.invoices.customer}</TableHead>
+                  <TableHead>{t.invoices.buyer}</TableHead>
                   <TableHead className="hidden sm:table-cell">{t.invoices.car}</TableHead>
                   <TableHead className="hidden md:table-cell">{t.invoices.finalPrice}</TableHead>
                   <TableHead>{t.invoices.status}</TableHead>

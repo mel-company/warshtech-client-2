@@ -2,13 +2,12 @@ import type { Permission } from "@/types";
 
 /**
  * صلاحيات نقطة البيع / محاسب — متوافقة مع `pos-permissions.ts` في الباك إند.
- * إنشاء/تحديث الدور: POST /roles/presets/accountant
+ * COMPANIES_READ: اختيار شركة في POS فقط (بدون COMPANIES_WRITE).
  */
 export const POS_PERMISSIONS: Permission[] = [
   "CUSTOMERS_READ",
   "CUSTOMERS_WRITE",
   "COMPANIES_READ",
-  "COMPANIES_WRITE",
   "PRODUCTS_READ",
   "SERVICES_READ",
   "INVOICES_READ",
@@ -119,10 +118,7 @@ export function getPosPermissionGaps(permissions: string[]): string[] {
   ) {
     gaps.push("CUSTOMERS_READ");
   }
-  if (
-    !permissions.includes("COMPANIES_READ") &&
-    !permissions.includes("COMPANIES_WRITE")
-  ) {
+  if (!permissions.includes("COMPANIES_READ")) {
     gaps.push("COMPANIES_READ");
   }
   return gaps;
