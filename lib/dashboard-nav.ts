@@ -6,6 +6,7 @@ import {
   ClipboardList,
   FileText,
   Users,
+  Building2,
   Package,
   Wrench,
   UserCog,
@@ -122,6 +123,14 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     labelKey: "customers",
     group: "catalog",
     isVisible: ({ hasPermission }) => hasPermission("customers", "read"),
+  },
+  {
+    id: "companies",
+    href: "/dashboard/companies",
+    icon: Building2,
+    labelKey: "companies",
+    group: "catalog",
+    isVisible: ({ hasPermission }) => hasPermission("companies", "read"),
   },
   {
     id: "products",

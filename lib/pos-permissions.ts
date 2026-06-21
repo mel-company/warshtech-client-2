@@ -7,6 +7,8 @@ import type { Permission } from "@/types";
 export const POS_PERMISSIONS: Permission[] = [
   "CUSTOMERS_READ",
   "CUSTOMERS_WRITE",
+  "COMPANIES_READ",
+  "COMPANIES_WRITE",
   "PRODUCTS_READ",
   "SERVICES_READ",
   "INVOICES_READ",
@@ -116,6 +118,12 @@ export function getPosPermissionGaps(permissions: string[]): string[] {
     !permissions.includes("CUSTOMERS_WRITE")
   ) {
     gaps.push("CUSTOMERS_READ");
+  }
+  if (
+    !permissions.includes("COMPANIES_READ") &&
+    !permissions.includes("COMPANIES_WRITE")
+  ) {
+    gaps.push("COMPANIES_READ");
   }
   return gaps;
 }

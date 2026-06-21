@@ -8,11 +8,12 @@ import {
   ShoppingCart,
   Trash2,
   User,
-  Car,
   CheckCircle,
   Loader2,
   Banknote,
   RotateCcw,
+  Building2,
+  UserCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,10 +24,13 @@ import apiClient from "@/lib/api";
 import { getPosPermissionGaps } from "@/lib/pos-permissions";
 import { canSellFromPos } from "@/lib/user-capabilities";
 import { extractListData } from "@/lib/list-response";
-import { resolveCustomerAndCar } from "@/lib/checkout";
+import {
+  resolveCashPosSale,
+  resolveCompanyPosSale,
+  type PosBuyerType,
+} from "@/lib/pos-checkout";
 import type {
-  Car as CarType,
-  Customer,
+  Company,
   InvoiceFormProduct,
   InvoiceFormService,
   Product,
@@ -44,7 +48,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 
 export function PosPage() {
   const { t } = useTranslation();
@@ -62,16 +65,16 @@ export function PosPage() {
   const [catalogError, setCatalogError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const [custPhone, setCustPhone] = React.useState("");
-  const [custName, setCustName] = React.useState("");
-  const [matchedCustomer, setMatchedCustomer] = React.useState<Customer | null>(null);
-  const [carNumber, setCarNumber] = React.useState("");
-  const [carName, setCarName] = React.useState("");
-  const [carModel, setCarModel] = React.useState("");
-  const [carColor, setCarColor] = React.useState("");
-  const [matchedCar, setMatchedCar] = React.useState<
-    (CarType & { customer?: { id: string } }) | null
-  >(null);
+  const [buyerType, setBuyerType] = React.useState<PosBuyerType>("cash");
+  const [cashNoteName, setCashNoteName] = React.useState("");
+
+  const [companySearch, setCompanySearch] = React.useState("");
+  const [companyResults, setCompanyResults] = React.useState<Company[]>([]);
+  const [isSearchingCompany, setIsSearchingCompany] = React.useState(false);
+  const [selectedCompany, setSelectedCompany] = React.useState<Company | null>(
+    null,
+  );
+
   const [customerOpen, setCustomerOpen] = React.useState(true);
 
   const [selectedServices, setSelectedServices] = React.useState<InvoiceFormService[]>([]);
@@ -124,42 +127,45 @@ export function PosPage() {
   }, [t.pos.catalogEmpty, t.pos.catalogForbidden]);
 
   React.useEffect(() => {
-    const phone = custPhone.trim();
-    if (phone.length < 4) {
-      setMatchedCustomer(null);
+    if (buyerType !== "company") return;
+    const q = companySearch.trim();
+    if (q.length < 2) {
+      setCompanyResults([]);
       return;
     }
+    setIsSearchingCompany(true);
     const timeout = setTimeout(async () => {
       try {
-        const res = await apiClient.get<{ data: Customer[] }>(
-          `/customers?search=${encodeURIComponent(phone)}&take=1`,
+        const res = await apiClient.get<{ data: Company[] }>(
+          `/companies?search=${encodeURIComponent(q)}&take=8`,
         );
-        setMatchedCustomer(res.data?.[0] ?? null);
+        setCompanyResults(extractListData(res));
       } catch {
-        setMatchedCustomer(null);
+        setCompanyResults([]);
+      } finally {
+        setIsSearchingCompany(false);
       }
-    }, 450);
+    }, 400);
     return () => clearTimeout(timeout);
-  }, [custPhone]);
+  }, [companySearch, buyerType]);
 
-  React.useEffect(() => {
-    const plate = carNumber.trim();
-    if (plate.length < 2) {
-      setMatchedCar(null);
-      return;
-    }
-    const timeout = setTimeout(async () => {
-      try {
-        const res = await apiClient.get<{ data: CarType[] }>(
-          `/cars?search=${encodeURIComponent(plate)}`,
-        );
-        setMatchedCar(res.data?.[0] ?? null);
-      } catch {
-        setMatchedCar(null);
-      }
-    }, 450);
-    return () => clearTimeout(timeout);
-  }, [carNumber]);
+  const selectCompany = React.useCallback((company: Company) => {
+    setSelectedCompany(company);
+    setCompanySearch(company.name);
+    setCompanyResults([]);
+  }, []);
+
+  const resetCustomerSection = React.useCallback(() => {
+    setCashNoteName("");
+    setCompanySearch("");
+    setCompanyResults([]);
+    setSelectedCompany(null);
+  }, []);
+
+  const handleBuyerTypeChange = (type: PosBuyerType) => {
+    setBuyerType(type);
+    resetCustomerSection();
+  };
 
   const filteredProducts = React.useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -229,15 +235,11 @@ export function PosPage() {
     setSelectedProducts([]);
     setFinalPrice(0);
     setSearch("");
+    resetCustomerSection();
   };
 
   const step1Valid =
-    custPhone.trim() &&
-    custName.trim() &&
-    carNumber.trim() &&
-    carName.trim() &&
-    carModel.trim() &&
-    carColor.trim();
+    buyerType === "cash" ? true : !!selectedCompany;
 
   const handleCheckout = async () => {
     if (!canSell) {
@@ -245,7 +247,9 @@ export function PosPage() {
       return;
     }
     if (!step1Valid) {
-      toast.error(t.pos.completeCustomer);
+      toast.error(
+        buyerType === "cash" ? t.pos.completeCustomer : t.pos.completeCompany,
+      );
       setCustomerOpen(true);
       return;
     }
@@ -260,21 +264,15 @@ export function PosPage() {
 
     setIsSubmitting(true);
     try {
-      const resolved = await resolveCustomerAndCar(
-        { phone: custPhone, name: custName, matchedCustomer },
-        {
-          number: carNumber,
-          name: carName,
-          model: carModel,
-          color: carColor,
-          matchedCar,
-        },
-      );
-      if (!resolved) return;
+      const resolved =
+        buyerType === "cash"
+          ? await resolveCashPosSale({ noteName: cashNoteName })
+          : await resolveCompanyPosSale(selectedCompany!.id);
 
       await apiClient.post("/invoices", {
         customerId: resolved.customerId,
         carId: resolved.carId,
+        companyId: "companyId" in resolved ? resolved.companyId : undefined,
         services: selectedServices.map((s) => ({
           serviceId: s.serviceId,
           price: s.price,
@@ -285,6 +283,7 @@ export function PosPage() {
           unitPrice: p.unitPrice,
         })),
         finalPrice,
+        notes: "notes" in resolved ? resolved.notes : undefined,
       });
 
       toast.success(t.pos.saleComplete);
@@ -455,65 +454,111 @@ export function PosPage() {
                 </span>
               </Button>
             </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 space-y-2 rounded-lg border bg-muted/30 p-3">
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="space-y-1">
-                  <Label className="text-xs">{t.invoices.customerPhone}</Label>
-                  <Input
-                    value={custPhone}
-                    onChange={(e) => setCustPhone(e.target.value)}
-                    dir="ltr"
-                    placeholder="+964"
-                  />
-                  {matchedCustomer && (
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 text-xs text-primary"
-                      onClick={() => {
-                        setCustName(matchedCustomer.name);
-                        setCustPhone(matchedCustomer.phone);
-                      }}
-                    >
-                      <CheckCircle className="size-3" />
-                      {matchedCustomer.name}
-                    </button>
+            <CollapsibleContent className="mt-3 space-y-3 rounded-lg border bg-muted/30 p-3">
+              <div className="space-y-2">
+                <Label className="text-xs">{t.pos.buyerType}</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={buyerType === "cash" ? "default" : "outline"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => handleBuyerTypeChange("cash")}
+                  >
+                    <UserCircle className="size-4" />
+                    {t.pos.cashCustomer}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={buyerType === "company" ? "default" : "outline"}
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => handleBuyerTypeChange("company")}
+                  >
+                    <Building2 className="size-4" />
+                    {t.pos.registeredCustomer}
+                  </Button>
+                </div>
+              </div>
+
+              {buyerType === "cash" ? (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">{t.pos.cashHint}</p>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t.pos.cashNoteName}</Label>
+                    <Input
+                      value={cashNoteName}
+                      onChange={(e) => setCashNoteName(e.target.value)}
+                      placeholder={t.pos.cashNoteName}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t.pos.searchCompany}</Label>
+                    <div className="relative">
+                      <Input
+                        value={companySearch}
+                        onChange={(e) => {
+                          setCompanySearch(e.target.value);
+                          if (
+                            selectedCompany &&
+                            e.target.value.trim() !== selectedCompany.name
+                          ) {
+                            setSelectedCompany(null);
+                          }
+                        }}
+                        placeholder={t.pos.searchCompany}
+                      />
+                      {isSearchingCompany && (
+                        <Loader2 className="absolute end-2.5 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                      )}
+                    </div>
+                    {companyResults.length > 0 && !selectedCompany && (
+                      <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border bg-background p-1">
+                        {companyResults.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className="flex w-full flex-col rounded-md px-2 py-1.5 text-start text-sm hover:bg-muted"
+                            onClick={() => selectCompany(c)}
+                          >
+                            <span className="font-medium">{c.name}</span>
+                            {c.phone && (
+                              <span className="text-xs text-muted-foreground" dir="ltr">
+                                {c.phone}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {companySearch.trim().length >= 2 &&
+                      !isSearchingCompany &&
+                      companyResults.length === 0 &&
+                      !selectedCompany && (
+                        <p className="text-xs text-muted-foreground">
+                          {t.pos.noCompaniesFound}
+                        </p>
+                      )}
+                  </div>
+
+                  {selectedCompany && (
+                    <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-2 text-sm">
+                      <CheckCircle className="size-4 shrink-0 text-primary" />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{selectedCompany.name}</p>
+                        {selectedCompany.phone && (
+                          <p className="text-xs text-muted-foreground" dir="ltr">
+                            {selectedCompany.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{t.invoices.customerName}</Label>
-                  <Input
-                    value={custName}
-                    onChange={(e) => setCustName(e.target.value)}
-                  />
-                </div>
-              </div>
-              <Separator />
-              <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                <Car className="size-3.5" />
-                {t.invoices.car}
-              </div>
-              <div className="grid gap-2 grid-cols-2">
-                <Input
-                  value={carNumber}
-                  onChange={(e) => setCarNumber(e.target.value)}
-                  placeholder={t.invoices.carNumber}
-                />
-                <Input
-                  value={carName}
-                  onChange={(e) => setCarName(e.target.value)}
-                  placeholder={t.invoices.carName}
-                />
-                <Input
-                  value={carModel}
-                  onChange={(e) => setCarModel(e.target.value)}
-                  placeholder={t.invoices.carModel}
-                />
-                <Input
-                  value={carColor}
-                  onChange={(e) => setCarColor(e.target.value)}
-                  placeholder={t.invoices.carColor}
-                />
-              </div>
+              )}
             </CollapsibleContent>
           </Collapsible>
 

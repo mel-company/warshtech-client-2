@@ -10,6 +10,7 @@ import {
   FileText,
   Lock,
   CarFront,
+  Building2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -31,6 +32,7 @@ import {
 type ResourceType =
   | "reception"
   | "customers"
+  | "companies"
   | "products"
   | "services"
   | "employees"
@@ -43,6 +45,7 @@ type PermissionLevel = "none" | "read" | "write";
 const resourceIcons: Record<ResourceType, React.ElementType> = {
   reception: CarFront,
   customers: Users,
+  companies: Building2,
   products: Package,
   services: Wrench,
   employees: UserCog,
@@ -56,6 +59,7 @@ const resourcePermissionMap: Record<
   { read: Permission; write: Permission }
 > = {
   customers: { read: "CUSTOMERS_READ", write: "CUSTOMERS_WRITE" },
+  companies: { read: "COMPANIES_READ", write: "COMPANIES_WRITE" },
   products: { read: "PRODUCTS_READ", write: "PRODUCTS_WRITE" },
   services: { read: "SERVICES_READ", write: "SERVICES_WRITE" },
   employees: { read: "EMPLOYEES_READ", write: "EMPLOYEES_WRITE" },
@@ -67,6 +71,7 @@ const resourcePermissionMap: Record<
 const RESOURCE_ORDER: ResourceType[] = [
   "reception",
   "customers",
+  "companies",
   "products",
   "services",
   "invoices",

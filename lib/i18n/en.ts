@@ -27,6 +27,7 @@ export const en = {
   nav: {
     dashboard: "Dashboard",
     customers: "Customers",
+    companies: "Companies",
     products: "Products",
     services: "Services",
     employees: "Employees",
@@ -178,6 +179,22 @@ export const en = {
       model: "Model",
       color: "Color",
     },
+  },
+
+  companies: {
+    title: "Companies",
+    subtitle: "B2B clients used at the point of sale",
+    addNew: "Add company",
+    editCompany: "Edit company",
+    deleteCompany: "Delete company",
+    deleteConfirm: "Are you sure you want to delete this company?",
+    name: "Company name",
+    phone: "Phone",
+    address: "Address",
+    notes: "Notes",
+    usageCount: "Sales count",
+    searchPlaceholder: "Search by company name or phone...",
+    empty: "No companies yet — add one to sell from POS",
   },
 
   vehicleEvents: {
@@ -344,6 +361,7 @@ export const en = {
       resource: "Resource",
       level: "Level",
       customers: "Customers",
+      companies: "Companies",
       products: "Products",
       services: "Services",
       employees: "Employees",
@@ -456,13 +474,13 @@ export const en = {
   pos: {
     title: "Point of Sale",
     cart: "Cart",
-    customerSection: "Customer & vehicle",
+    customerSection: "Customer",
     searchPlaceholder: "Search products or services...",
     emptyCart: "Cart is empty — add products or services",
     checkout: "Complete sale",
     newSale: "New sale",
     saleComplete: "Sale completed successfully",
-    completeCustomer: "Complete customer and vehicle details",
+    completeCustomer: "Complete customer details",
     addItems: "Add at least one product or service",
     ready: "Ready",
     required: "Required",
@@ -475,6 +493,16 @@ export const en = {
     missingPermissionsHint:
       "Roles → edit Accountant/Cashier role or use the Cashier template, then sign in again:",
     cannotSell: "You need INVOICES_WRITE to complete a sale",
+    buyerType: "Sale type",
+    cashCustomer: "Cash / walk-in",
+    registeredCustomer: "Company",
+    cashHint: "Quick sale — optional name for invoice notes",
+    cashNoteName: "Customer name (optional)",
+    searchCompany: "Search company or customer...",
+    selectCompany: "Pick a customer from results",
+    selectCar: "Pick a vehicle (optional)",
+    noCompaniesFound: "No customer matches this search",
+    completeCompany: "Select a registered company or customer",
   },
 
   invoices: {

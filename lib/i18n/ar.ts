@@ -36,6 +36,7 @@ export const ar = {
   nav: {
     dashboard: "الرئيسية",
     customers: "العملاء",
+    companies: "الشركات",
     products: "المنتجات",
     services: "الخدمات",
     employees: "الموظفين",
@@ -196,6 +197,22 @@ export const ar = {
       model: "الموديل",
       color: "اللون",
     },
+  },
+
+  companies: {
+    title: "الشركات",
+    subtitle: "شركات وعملاء B2B — تُستخدم في نقطة البيع",
+    addNew: "إضافة شركة",
+    editCompany: "تعديل الشركة",
+    deleteCompany: "حذف الشركة",
+    deleteConfirm: "هل أنت متأكد من حذف هذه الشركة؟",
+    name: "اسم الشركة",
+    phone: "رقم الهاتف",
+    address: "العنوان",
+    notes: "ملاحظات",
+    usageCount: "عدد المبيعات",
+    searchPlaceholder: "بحث باسم الشركة أو الهاتف...",
+    empty: "لا توجد شركات — أضف شركة للبيع لها من الكاشير",
   },
 
   vehicleEvents: {
@@ -374,6 +391,7 @@ export const ar = {
       resource: "المورد",
       level: "المستوى",
       customers: "العملاء",
+      companies: "الشركات",
       products: "المنتجات",
       services: "الخدمات",
       employees: "الموظفين",
@@ -496,13 +514,13 @@ export const ar = {
   pos: {
     title: "نقطة البيع",
     cart: "سلة البيع",
-    customerSection: "بيانات العميل والسيارة",
+    customerSection: "العميل",
     searchPlaceholder: "بحث عن منتج أو خدمة...",
     emptyCart: "السلة فارغة — اختر منتجات أو خدمات",
     checkout: "إتمام البيع",
     newSale: "بيع جديد",
     saleComplete: "تم إتمام البيع بنجاح",
-    completeCustomer: "أكمل بيانات العميل والسيارة",
+    completeCustomer: "أكمل بيانات العميل",
     addItems: "أضف منتجاً أو خدمة واحدة على الأقل",
     ready: "جاهز",
     required: "مطلوب",
@@ -515,6 +533,16 @@ export const ar = {
     missingPermissionsHint:
       "من الأدوار → عدّل دور «محاسب» أو استخدم قالب «كاشير» ثم سجّل دخول من جديد:",
     cannotSell: "لا تملك صلاحية إنشاء فاتورة (INVOICES_WRITE)",
+    buyerType: "نوع البيع",
+    cashCustomer: "زبون نقدي",
+    registeredCustomer: "شركة",
+    cashHint: "بيع مباشر بدون تسجيل — اختياري: اسم للملاحظة",
+    cashNoteName: "اسم الزبون (اختياري)",
+    searchCompany: "ابحث عن شركة أو عميل...",
+    selectCompany: "اختر العميل من النتائج",
+    selectCar: "اختر السيارة (اختياري)",
+    noCompaniesFound: "لا يوجد عميل بهذا الاسم أو الرقم",
+    completeCompany: "اختر شركة أو عميل مسجّل",
   },
 
   invoices: {

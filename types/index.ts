@@ -28,6 +28,24 @@ export interface Customer {
   updatedAt: Date
 }
 
+export interface Company {
+  id: string
+  name: string
+  phone?: string | null
+  address?: string | null
+  notes?: string | null
+  usageCount: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CompanyFormData {
+  name: string
+  phone?: string
+  address?: string
+  notes?: string
+}
+
 // -----------------------------------------------------------------------------
 // Product / Stock Types
 // -----------------------------------------------------------------------------
@@ -113,6 +131,8 @@ export interface Employee {
 export type Permission =
   | 'CUSTOMERS_READ'
   | 'CUSTOMERS_WRITE'
+  | 'COMPANIES_READ'
+  | 'COMPANIES_WRITE'
   | 'PRODUCTS_READ'
   | 'PRODUCTS_WRITE'
   | 'SERVICES_READ'
@@ -287,6 +307,7 @@ export interface Invoice {
   invoiceNumber: string
   customerId: string
   carId: string
+  companyId?: string | null
   totalPrice: number
   minPrice: number
   finalPrice: number
@@ -297,6 +318,11 @@ export interface Invoice {
     name: string
     phone: string
   }
+  company?: {
+    id: string
+    name: string
+    phone?: string | null
+  } | null
   car: {
     id: string
     name: string
