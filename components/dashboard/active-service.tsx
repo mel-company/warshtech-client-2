@@ -15,6 +15,7 @@ import {
   Phone,
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 import {
   getInvoiceBuyerName,
@@ -197,13 +198,13 @@ export function ActiveServicePage() {
                       {getInvoiceBuyerName(invoice)}
                     </CardTitle>
                     {getInvoiceBuyerPhone(invoice) && (
-                    <p
-                      className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
-                      dir="ltr"
-                    >
-                      <Phone className="size-3" />
-                      {getInvoiceBuyerPhone(invoice)}
-                    </p>
+                      <p
+                        className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"
+                        dir="ltr"
+                      >
+                        <Phone className="size-3" />
+                        {getInvoiceBuyerPhone(invoice)}
+                      </p>
                     )}
                   </div>
                   <Badge

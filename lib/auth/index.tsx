@@ -19,8 +19,8 @@ export interface TenantInfo {
 }
 
 type AuthContextType = AuthState & {
-  sendOTP: (phone: string) => Promise<boolean>;
-  verifyOTP: (phone: string, code: string) => Promise<boolean>;
+  sendOTP: (phone: string, tenantId: string) => Promise<boolean>;
+  verifyOTP: (phone: string, code: string, tenantId: string) => Promise<boolean>;
   login: (
     phone: string,
     password: string,
@@ -114,12 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const sendOTP = React.useCallback(
-    async (phone: string): Promise<boolean> => {
+    async (phone: string, tenantId: string): Promise<boolean> => {
       try {
         await apiClient.post(
           "/auth/otp/send",
           { phone },
-          { tenantId: tenant?.id },
+          { tenantId },
         );
         setPendingPhone(phone);
         return true;
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [tenant],
+    [],
   );
 
   const login = React.useCallback(
@@ -184,14 +184,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const verifyOTP = React.useCallback(
-    async (phone: string, code: string): Promise<boolean> => {
+    async (
+      phone: string,
+      code: string,
+      tenantId: string,
+    ): Promise<boolean> => {
       try {
         const response = await apiClient.post<{
           accessToken: string;
           refreshToken: string;
           tenant: TenantInfo;
           user: AuthUser;
-        }>("/auth/otp/verify", { phone, code }, { tenantId: tenant?.id });
+        }>("/auth/otp/verify", { phone, code }, { tenantId });
         localStorage.setItem("auth_user", JSON.stringify(response.user));
         localStorage.setItem("access_token", response.accessToken);
         localStorage.setItem("refresh_token", response.refreshToken);
@@ -211,10 +215,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false;
       }
     },
-    [tenant],
+    [],
   );
 
   const logout = React.useCallback(() => {
+    clearTenantId();
     cleanCredentialsAndRedirect();
     setState({ user: null, isAuthenticated: false, isLoading: false });
     setPendingPhone(null);
@@ -224,6 +229,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setTenant = React.useCallback((newTenant: TenantInfo) => {
     setTenantState(newTenant);
     localStorage.setItem("auth_tenant", JSON.stringify(newTenant));
+    setTenantId(newTenant.id);
   }, []);
 
   const hasPermission = React.useCallback(

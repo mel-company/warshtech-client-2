@@ -38,6 +38,7 @@ export function LoginPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [tenantId, setTenantId] = useState(FIXED_TENANT_ID);
+  const [otpTenantId, setOtpTenantId] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
 
@@ -63,13 +64,15 @@ export function LoginPage() {
     e.preventDefault();
     setError("");
 
-    if (!phone || phone.length < 10) {
-      setError(t("auth.phoneRequired"));
+    const tenant = (isTenantLocked ? FIXED_TENANT_ID : tenantId).trim();
+    if (!phone || phone.length < 10 || !tenant) {
+      setError(t("auth.fillAllFields"));
       return;
     }
 
-    const success = await sendOTP(phone);
+    const success = await sendOTP(phone, tenant);
     if (success) {
+      setOtpTenantId(tenant);
       setStep("otp");
     } else {
       setError(t("auth.otpSendFailed"));
@@ -80,7 +83,7 @@ export function LoginPage() {
     setOtp(value);
     if (value.length === 6) {
       setError("");
-      const success = await verifyOTP(phone, value);
+      const success = await verifyOTP(phone, value, otpTenantId);
       if (success) {
         router.push("/dashboard");
       } else {
@@ -92,6 +95,7 @@ export function LoginPage() {
 
   const handleBack = () => {
     setStep("credentials");
+    setOtpTenantId("");
     setOtp("");
     setError("");
   };
@@ -125,22 +129,22 @@ export function LoginPage() {
             {step === "credentials" ? (
               <form onSubmit={handleLogin} className="space-y-4">
                 {!isTenantLocked && (
-                <div className="space-y-2">
-                  <Label htmlFor="tenant">{t("auth.tenant")}</Label>
-                  <div className="relative">
-                    <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="tenant"
-                      type="text"
-                      placeholder={t("auth.tenantPlaceholder")}
-                      value={tenantId}
-                      onChange={(e) => setTenantId(e.target.value)}
-                      className="pl-4 pr-10 text-left"
-                      dir="ltr"
-                      disabled={isLoading}
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="tenant">{t("auth.tenant")}</Label>
+                    <div className="relative">
+                      <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="tenant"
+                        type="text"
+                        placeholder={t("auth.tenantPlaceholder")}
+                        value={tenantId}
+                        onChange={(e) => setTenantId(e.target.value)}
+                        className="pl-4 pr-10 text-left"
+                        dir="ltr"
+                        disabled={isLoading}
+                      />
+                    </div>
                   </div>
-                </div>
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="phone">{t("auth.phone")}</Label>
