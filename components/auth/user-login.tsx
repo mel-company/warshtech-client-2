@@ -17,11 +17,15 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import type { AuthUser } from "@/types";
-import { FIXED_TENANT_ID, isTenantLocked } from "@/lib/tenant-config";
+import {
+  FIXED_TENANT_ID,
+  getDefaultTenantId,
+  isTenantLocked,
+} from "@/lib/tenant-config";
 
 export function UserLoginPage() {
   const { login, isLoading } = useAuth();
-  const [tenantId, setTenantId] = useState(FIXED_TENANT_ID);
+  const [tenantId, setTenantId] = useState(getDefaultTenantId);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -74,26 +78,26 @@ export function UserLoginPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               {!isTenantLocked && (
-              <div className="space-y-2">
-                <Label htmlFor="tenant">{t("auth.tenant")}</Label>
-                <div className="relative">
-                  <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="tenant"
-                    type="text"
-                    placeholder={t("auth.tenantPlaceholder")}
-                    value={tenantId}
-                    onChange={(e) => setTenantId(e.target.value)}
-                    className="pl-4 pr-10 text-left"
-                    dir="ltr"
-                    disabled={busy}
-                    autoComplete="organization"
-                  />
+                <div className="space-y-2">
+                  <Label htmlFor="tenant">{t("auth.tenant")}</Label>
+                  <div className="relative">
+                    <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="tenant"
+                      type="text"
+                      placeholder={t("auth.tenantPlaceholder")}
+                      value={tenantId}
+                      onChange={(e) => setTenantId(e.target.value)}
+                      className="pl-4 pr-10 text-left"
+                      dir="ltr"
+                      disabled={busy}
+                      autoComplete="organization"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {t("auth.tenantHint")}
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {t("auth.tenantHint")}
-                </p>
-              </div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="phone">{t("auth.phone")}</Label>

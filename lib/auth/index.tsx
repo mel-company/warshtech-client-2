@@ -4,6 +4,7 @@ import * as React from "react";
 import type { AuthUser, AuthState } from "@/types";
 import { apiClient, setTenantId, clearTenantId } from "@/lib/api";
 import { cleanCredentialsAndRedirect } from "@/lib/auth-utils";
+import { saveLastRegisteredTenant } from "@/lib/tenant-config";
 import {
   hasReceptionistPermissions,
   hasReceptionistReadAccess,
@@ -170,7 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: RegisterData,
     ): Promise<{ success: boolean; error?: string }> => {
       try {
-        await apiClient.post("/auth/register", data);
+        const response = await apiClient.post<{ subdomain: string }>(
+          "/auth/register",
+          data,
+        );
+        saveLastRegisteredTenant(response.subdomain);
         return { success: true };
       } catch (error: any) {
         const message = error?.response?.data?.message || "Registration failed";

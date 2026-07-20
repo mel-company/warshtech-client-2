@@ -27,7 +27,11 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { FIXED_TENANT_ID, isTenantLocked } from "@/lib/tenant-config";
+import {
+  FIXED_TENANT_ID,
+  getDefaultTenantId,
+  isTenantLocked,
+} from "@/lib/tenant-config";
 
 type AuthStep = "credentials" | "otp";
 
@@ -37,7 +41,7 @@ export function LoginPage() {
   const [step, setStep] = useState<AuthStep>("credentials");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [tenantId, setTenantId] = useState(FIXED_TENANT_ID);
+  const [tenantId, setTenantId] = useState(getDefaultTenantId);
   const [otpTenantId, setOtpTenantId] = useState("");
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
