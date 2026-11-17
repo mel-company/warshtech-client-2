@@ -247,19 +247,20 @@ export function CompaniesPage() {
                   <TableHead>{t.companies.phone}</TableHead>
                   <TableHead>{t.companies.address}</TableHead>
                   <TableHead>{t.companies.usageCount}</TableHead>
+                  <TableHead>{t.companies.balance}</TableHead>
                   {canWrite && <TableHead className="w-12" />}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isFetching ? (
                   <TableRow>
-                    <TableCell colSpan={canWrite ? 5 : 4} className="py-8 text-center">
+                    <TableCell colSpan={canWrite ? 6 : 5} className="py-8 text-center">
                       {t.common.loading}
                     </TableCell>
                   </TableRow>
                 ) : filteredCompanies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={canWrite ? 5 : 4} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={canWrite ? 6 : 5} className="py-8 text-center text-muted-foreground">
                       {t.companies.empty}
                     </TableCell>
                   </TableRow>
@@ -277,6 +278,9 @@ export function CompaniesPage() {
                         {company.address || "—"}
                       </TableCell>
                       <TableCell>{company.usageCount}</TableCell>
+                      <TableCell>
+                        {Number(company.balanceDue ?? 0).toLocaleString()} {t.currency.symbol}
+                      </TableCell>
                       {canWrite && (
                         <TableCell>
                           <DropdownMenu>

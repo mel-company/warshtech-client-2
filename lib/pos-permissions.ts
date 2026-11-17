@@ -118,8 +118,5 @@ export function getPosPermissionGaps(permissions: string[]): string[] {
   ) {
     gaps.push("CUSTOMERS_READ");
   }
-  if (!permissions.includes("COMPANIES_READ")) {
-    gaps.push("COMPANIES_READ");
-  }
   return gaps;
 }

@@ -349,11 +349,11 @@ export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "", wor
           <View style={styles.infoCard}>
             <Text style={styles.infoCardIcon}>السيارة</Text>
             <Text style={styles.infoValue}>
-              {invoice.car.name}
+              {invoice.car?.name ?? "—"}
             </Text>
-            <Text style={styles.infoSub}>{invoice.car.number}</Text>
+            <Text style={styles.infoSub}>{invoice.car?.number ?? ""}</Text>
             <Text style={styles.infoSub}>
-              {invoice.car.model}  {invoice.car.color}
+              {invoice.car?.model ?? ""}  {invoice.car?.color ?? ""}
             </Text>
           </View>
           )}
@@ -458,6 +458,24 @@ export function InvoicePDF({ invoice, currency = "ر.س", workshopName = "", wor
                 {String(finalPrice)}
               </Text>
             </View>
+            <View style={styles.totalsRow}>
+              <Text style={styles.totalsLabel}>المدفوع</Text>
+              <Text style={styles.totalsValue}>
+                {String(Number(invoice.paidAmount ?? 0))}
+              </Text>
+            </View>
+            <View style={styles.totalsRow}>
+              <Text style={styles.totalsLabel}>المتبقي</Text>
+              <Text style={styles.totalsValue}>
+                {String(Math.max(0, finalPrice - Number(invoice.paidAmount ?? 0)))}
+              </Text>
+            </View>
+            {invoice.deliveryCode ? (
+              <View style={styles.totalsRow}>
+                <Text style={styles.totalsLabel}>كود التسليم</Text>
+                <Text style={styles.totalsValue}>{invoice.deliveryCode}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 

@@ -6,6 +6,7 @@ import {
   CalendarClock,
   Clock,
   Loader2,
+  MessageCircle,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { fetchUpcomingMaintenance } from "@/lib/maintenance-api";
 import { triggerMaintenanceScan } from "@/lib/notifications-api";
 import { REALTIME_EVENTS, useRealtimeEvent } from "@/lib/realtime";
 import type { MaintenanceFilter, MaintenanceUrgency, VehicleMaintenance } from "@/types";
+import { maintenanceWhatsappMessage, whatsappHref } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +50,22 @@ function MaintenanceRow({ item, locale, t }: {
 }) {
   const badge = URGENCY_BADGE[item.urgency];
   const customer = item.customer;
+  const when =
+    item.daysRemaining != null && item.daysRemaining < 0
+      ? t.maintenance.overdueDays.replace("{days}", String(Math.abs(item.daysRemaining)))
+      : item.daysRemaining != null
+        ? t.maintenance.daysRemaining.replace("{days}", String(item.daysRemaining))
+        : t.maintenance.nextService;
+  const whatsappUrl = customer
+    ? whatsappHref(
+        customer.phone,
+        maintenanceWhatsappMessage({
+          customerName: customer.name,
+          carLabel: `${item.car?.name ?? ""} ${item.car?.number ?? ""}`.trim(),
+          when,
+        }),
+      )
+    : null;
 
   return (
     <Card className="overflow-hidden">
@@ -97,16 +115,26 @@ function MaintenanceRow({ item, locale, t }: {
             )}
           </div>
         </div>
-        {item.nextServiceDate && (
-          <div className="text-end text-xs text-muted-foreground">
-            <p>{t.maintenance.nextService}</p>
-            <p className="font-medium text-foreground">
-              {new Date(item.nextServiceDate).toLocaleDateString(
-                locale === "ar" ? "ar-IQ" : "en-IQ",
-              )}
-            </p>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          {whatsappUrl && (
+            <Button variant="outline" size="sm" asChild>
+              <a href={whatsappUrl} target="_blank" rel="noreferrer">
+                <MessageCircle className="size-4" />
+                {t.maintenance.whatsapp}
+              </a>
+            </Button>
+          )}
+          {item.nextServiceDate && (
+            <div className="text-end text-xs text-muted-foreground">
+              <p>{t.maintenance.nextService}</p>
+              <p className="font-medium text-foreground">
+                {new Date(item.nextServiceDate).toLocaleDateString(
+                  locale === "ar" ? "ar-IQ" : "en-IQ",
+                )}
+              </p>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -52,11 +52,6 @@ export async function resolveCashPosSale(options?: {
 
 export async function resolveCompanyPosSale(
   companyId: string,
-): Promise<{ customerId: string; carId: string; companyId: string }> {
-  const base = await resolveCashPosSale();
-  return {
-    customerId: base.customerId,
-    carId: base.carId,
-    companyId,
-  };
+): Promise<{ companyId: string }> {
+  return { companyId };
 }

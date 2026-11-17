@@ -20,7 +20,9 @@ import { cn } from "@/lib/utils";
 import {
   getInvoiceBuyerName,
   getInvoiceBuyerPhone,
+  shouldHideInvoiceCar,
 } from "@/lib/invoice-display";
+import { invoiceWhatsappMessage, whatsappHref } from "@/lib/whatsapp";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { fetchActiveInvoices, updateInvoiceStatus } from "@/lib/reception-api";
@@ -75,6 +77,7 @@ export function ActiveServicePage() {
     null,
   );
   const [completeMileage, setCompleteMileage] = React.useState("");
+  const [readyInvoice, setReadyInvoice] = React.useState<Invoice | null>(null);
 
   const load = React.useCallback(async () => {
     try {
@@ -120,7 +123,7 @@ export function ActiveServicePage() {
       const mileage = completeMileage.trim()
         ? parseInt(completeMileage.trim(), 10)
         : undefined;
-      await updateInvoiceStatus(
+      const updated = await updateInvoiceStatus(
         invoice.id,
         "COMPLETED",
         Number.isFinite(mileage) ? mileage : undefined,
@@ -128,6 +131,7 @@ export function ActiveServicePage() {
       toast.success(t.activeService.completed);
       setConfirmInvoice(null);
       setCompleteMileage("");
+      if (updated.deliveryCode) setReadyInvoice(updated);
       await load();
     } catch (error) {
       console.error("Failed to complete invoice:", error);
@@ -216,6 +220,7 @@ export function ActiveServicePage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 pt-4">
+                {!shouldHideInvoiceCar(invoice) && invoice.car && (
                 <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-2.5">
                   <Car className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 text-sm">
@@ -227,6 +232,7 @@ export function ActiveServicePage() {
                     </p>
                   </div>
                 </div>
+                )}
 
                 {invoice.services.length > 0 && (
                   <div className="space-y-1.5">
@@ -328,6 +334,63 @@ export function ActiveServicePage() {
             >
               {t.activeService.markDone}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!readyInvoice}
+        onOpenChange={(open) => {
+          if (!open) setReadyInvoice(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.activeService.deliveryTitle}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t.activeService.deliveryBody.replace(
+                "{code}",
+                readyInvoice?.deliveryCode ?? "",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <p className="text-center text-3xl font-bold tracking-widest" dir="ltr">
+            {readyInvoice?.deliveryCode}
+          </p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t.actions.close}</AlertDialogCancel>
+            {readyInvoice &&
+              whatsappHref(
+                getInvoiceBuyerPhone(readyInvoice),
+                invoiceWhatsappMessage({
+                  invoiceNumber: readyInvoice.invoiceNumber,
+                  buyerName: getInvoiceBuyerName(readyInvoice),
+                  finalPrice: Number(readyInvoice.finalPrice),
+                  currency: t.currency.symbol,
+                  deliveryCode: readyInvoice.deliveryCode,
+                }),
+              ) && (
+                <Button asChild>
+                  <a
+                    href={
+                      whatsappHref(
+                        getInvoiceBuyerPhone(readyInvoice),
+                        invoiceWhatsappMessage({
+                          invoiceNumber: readyInvoice.invoiceNumber,
+                          buyerName: getInvoiceBuyerName(readyInvoice),
+                          finalPrice: Number(readyInvoice.finalPrice),
+                          currency: t.currency.symbol,
+                          deliveryCode: readyInvoice.deliveryCode,
+                        }),
+                      ) ?? "#"
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t.activeService.openWhatsapp}
+                  </a>
+                </Button>
+              )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

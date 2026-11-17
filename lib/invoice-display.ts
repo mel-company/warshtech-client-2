@@ -51,7 +51,15 @@ export function getInvoiceBuyerPhone(
 export function shouldHideInvoiceCar(
   invoice: Pick<Invoice, "car" | "company" | "customer">,
 ): boolean {
+  if (!invoice.car) return true;
   return isPosPlaceholderCar(invoice.car);
+}
+
+export function invoiceBalance(
+  invoice: Pick<Invoice, "finalPrice" | "paidAmount">,
+): number {
+  const due = Number(invoice.finalPrice) - Number(invoice.paidAmount ?? 0);
+  return Math.max(0, Math.round(due * 100) / 100);
 }
 
 export function filterWorkshopCustomers<
@@ -75,9 +83,9 @@ export function invoiceMatchesSearch(
     invoice.invoiceNumber.toLowerCase().includes(q) ||
     getInvoiceBuyerName(invoice).toLowerCase().includes(q) ||
     (invoice.company?.name?.toLowerCase().includes(q) ?? false) ||
-    invoice.customer.name.toLowerCase().includes(q) ||
-    invoice.customer.phone.includes(q) ||
+    (invoice.customer?.name.toLowerCase().includes(q) ?? false) ||
+    (invoice.customer?.phone.includes(q) ?? false) ||
     (invoice.company?.phone?.includes(q) ?? false) ||
-    invoice.car.number.toLowerCase().includes(q)
+    (invoice.car?.number.toLowerCase().includes(q) ?? false)
   );
 }

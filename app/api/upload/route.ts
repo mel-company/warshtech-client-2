@@ -16,45 +16,38 @@ export async function POST(request: NextRequest) {
     const tenantId = request.headers.get("x-tenant-id");
     const contentType = file.type || "application/octet-stream";
 
-    const presignedHeaders: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    if (authorization) presignedHeaders.Authorization = authorization;
-    if (tenantId) presignedHeaders["x-tenant-id"] = tenantId;
+    const forwardHeaders: Record<string, string> = {};
+    if (authorization) forwardHeaders.Authorization = authorization;
+    if (tenantId) forwardHeaders["x-tenant-id"] = tenantId;
 
-    const presignedRes = await fetch(`${API_URL}/upload/presigned-url`, {
+    const bytes = Buffer.from(await file.arrayBuffer());
+    const forward = new FormData();
+    forward.append("key", key);
+    forward.append(
+      "file",
+      new Blob([bytes], { type: contentType }),
+      "upload",
+    );
+
+    const uploadRes = await fetch(`${API_URL}/upload/file`, {
       method: "POST",
-      headers: presignedHeaders,
-      body: JSON.stringify({ key, contentType }),
-    });
-
-    if (!presignedRes.ok) {
-      const error = await presignedRes.json().catch(() => ({}));
-      return NextResponse.json(
-        { message: (error as { message?: string }).message || "Failed to get presigned URL" },
-        { status: presignedRes.status },
-      );
-    }
-
-    const { url, publicUrl } = (await presignedRes.json()) as {
-      url: string;
-      publicUrl: string;
-    };
-
-    const uploadRes = await fetch(url, {
-      method: "PUT",
-      body: file,
-      headers: { "Content-Type": contentType },
+      headers: forwardHeaders,
+      body: forward,
     });
 
     if (!uploadRes.ok) {
+      const error = await uploadRes.json().catch(() => ({}));
       return NextResponse.json(
-        { message: "Failed to upload file to storage" },
-        { status: 502 },
+        {
+          message:
+            (error as { message?: string }).message ||
+            "Failed to upload file to storage",
+        },
+        { status: uploadRes.status },
       );
     }
 
-    return NextResponse.json({ publicUrl });
+    return NextResponse.json(await uploadRes.json());
   } catch (error) {
     console.error("Upload proxy error:", error);
     return NextResponse.json({ message: "Upload failed" }, { status: 500 });

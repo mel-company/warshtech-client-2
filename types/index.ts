@@ -35,6 +35,7 @@ export interface Company {
   address?: string | null
   notes?: string | null
   usageCount: number
+  balanceDue?: number
   createdAt: Date
   updatedAt: Date
 }
@@ -273,6 +274,7 @@ export interface UserFormData {
 // -----------------------------------------------------------------------------
 
 export type InvoiceStatus = 'PENDING' | 'IN_SERVICE' | 'COMPLETED' | 'CANCELLED'
+export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'CREDIT'
 
 export interface InvoiceProduct {
   id: string
@@ -305,31 +307,35 @@ export interface InvoiceService {
 export interface Invoice {
   id: string
   invoiceNumber: string
-  customerId: string
-  carId: string
+  customerId?: string | null
+  carId?: string | null
   companyId?: string | null
   totalPrice: number
   minPrice: number
   finalPrice: number
+  paymentMethod?: PaymentMethod
+  paidAmount?: number
+  deliveryCode?: string | null
+  deliveredAt?: string | null
   notes?: string
   status: InvoiceStatus
-  customer: {
+  customer?: {
     id: string
     name: string
     phone: string
-  }
+  } | null
   company?: {
     id: string
     name: string
     phone?: string | null
   } | null
-  car: {
+  car?: {
     id: string
     name: string
     number: string
     model: string
     color: string
-  }
+  } | null
   products: InvoiceProduct[]
   services: InvoiceService[]
   createdAt: Date
@@ -448,6 +454,8 @@ export interface UpdateMaintenanceRulesData {
 export type NotificationType =
   | 'MAINTENANCE_OVERDUE'
   | 'MAINTENANCE_DUE_SOON'
+  | 'CAR_RECEIVED'
+  | 'CAR_READY'
 
 export interface AppNotification {
   id: string

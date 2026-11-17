@@ -7,6 +7,8 @@ import {
   Wrench,
   ShoppingCart,
   Trash2,
+  Plus,
+  Minus,
   User,
   Loader2,
   Banknote,
@@ -21,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import apiClient from "@/lib/api";
-import { canPickCompanyInPos } from "@/lib/companies-access";
 import { getPosPermissionGaps } from "@/lib/pos-permissions";
 import { canSellFromPos } from "@/lib/user-capabilities";
 import { extractListData } from "@/lib/list-response";
@@ -33,6 +34,7 @@ import type {
   Product,
   Service,
 } from "@/types";
+import { getTenantId } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +51,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export function PosPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const canPickCompany = canPickCompanyInPos(user);
   const permissionGaps = React.useMemo(
     () => getPosPermissionGaps(user?.permissions ?? []),
     [user?.permissions],
@@ -76,11 +77,17 @@ export function PosPage() {
   const [finalPrice, setFinalPrice] = React.useState(0);
 
   React.useEffect(() => {
+    if (!getTenantId()) {
+      setIsLoadingCatalog(false);
+      return;
+    }
+
     const load = async () => {
       setCatalogError(null);
       let productList: Product[] = [];
       let serviceList: Service[] = [];
       let hadForbidden = false;
+      let hadFailure = false;
 
       try {
         const productsRes = await apiClient.get<{ data: Product[] }>(
@@ -88,6 +95,7 @@ export function PosPage() {
         );
         productList = extractListData(productsRes);
       } catch (error) {
+        hadFailure = true;
         const msg = error instanceof Error ? error.message : "";
         if (msg.toLowerCase().includes("forbidden")) hadForbidden = true;
         console.error("POS products load failed:", error);
@@ -101,6 +109,7 @@ export function PosPage() {
           (s) => s.isActive !== false,
         );
       } catch (error) {
+        hadFailure = true;
         const msg = error instanceof Error ? error.message : "";
         if (msg.toLowerCase().includes("forbidden")) hadForbidden = true;
         console.error("POS services load failed:", error);
@@ -111,7 +120,11 @@ export function PosPage() {
 
       if (hadForbidden) {
         setCatalogError(t.pos.catalogForbidden);
-      } else if (productList.length === 0 && serviceList.length === 0) {
+      } else if (
+        !hadFailure &&
+        productList.length === 0 &&
+        serviceList.length === 0
+      ) {
         toast.message(t.pos.catalogEmpty);
       }
 
@@ -121,12 +134,7 @@ export function PosPage() {
   }, [t.pos.catalogEmpty, t.pos.catalogForbidden]);
 
   React.useEffect(() => {
-    if (!canPickCompany) {
-      setBuyerType("cash");
-      setCompanies([]);
-      setSelectedCompanyId(null);
-      return;
-    }
+    if (!getTenantId()) return;
     const loadCompanies = async () => {
       setIsLoadingCompanies(true);
       try {
@@ -134,12 +142,14 @@ export function PosPage() {
         setCompanies(extractListData(res));
       } catch (error) {
         console.error("POS companies load failed:", error);
+        const message = error instanceof Error ? error.message : t.messages.error.general;
+        toast.error(message);
       } finally {
         setIsLoadingCompanies(false);
       }
     };
     void loadCompanies();
-  }, [canPickCompany]);
+  }, [t.messages.error.general]);
 
   const filteredCompanies = React.useMemo(() => {
     const q = companySearch.trim().toLowerCase();
@@ -207,27 +217,55 @@ export function PosPage() {
     ]);
   };
 
-  const addProduct = (product: Product) => {
-    if (selectedProducts.some((p) => p.productId === product.id)) return;
-    const uv = Number(product.unitValue) || 1;
-    const prodMin = Number(product.minPrice) || Number(product.salePrice);
-    setSelectedProducts((prev) => [
-      ...prev,
-      {
-        productId: product.id,
-        productName: product.name,
-        productPhoto: product.photos?.[0],
-        quantity: uv,
-        unitPrice: Number(product.salePrice),
-        minPrice: prodMin,
-        unit: product.unit,
-        unitValue: uv,
-        unitAdjustable: product.unitAdjustable || false,
-        originalUnitValue: uv,
-        originalPrice: Number(product.salePrice),
-        originalMinPrice: prodMin,
-      },
-    ]);
+  const productStep = (product: Product) => Number(product.unitValue) || 1;
+
+  const maxProductCount = (product: Product) => {
+    const step = productStep(product);
+    const stock = Number(product.stock);
+    if (!Number.isFinite(stock)) return 99;
+    return Math.max(0, Math.floor(stock / step));
+  };
+
+  const lineCount = (line: InvoiceFormProduct) => {
+    const step = line.originalUnitValue || 1;
+    return Math.max(1, Math.round(line.quantity / step));
+  };
+
+  const setProductCount = (product: Product, count: number) => {
+    const max = maxProductCount(product);
+    if (count > max) {
+      toast.error(t.products.outOfStock);
+      return;
+    }
+    if (count <= 0) {
+      setSelectedProducts((prev) => prev.filter((p) => p.productId !== product.id));
+      return;
+    }
+    const step = productStep(product);
+    const sale = Number(product.salePrice);
+    const min = Number(product.minPrice) || sale;
+    const quantity = step * count;
+    const next: InvoiceFormProduct = {
+      productId: product.id,
+      productName: product.name,
+      productPhoto: product.photos?.[0],
+      quantity,
+      unitPrice: Math.round(sale * count),
+      minPrice: Math.round(min * count),
+      unit: product.unit,
+      unitValue: quantity,
+      unitAdjustable: product.unitAdjustable || false,
+      originalUnitValue: step,
+      originalPrice: sale,
+      originalMinPrice: min,
+    };
+    setSelectedProducts((prev) => {
+      const index = prev.findIndex((p) => p.productId === product.id);
+      if (index === -1) return [...prev, next];
+      const copy = [...prev];
+      copy[index] = next;
+      return copy;
+    });
   };
 
   const resetSale = () => {
@@ -261,15 +299,16 @@ export function PosPage() {
 
     setIsSubmitting(true);
     try {
-      const resolved =
-        buyerType === "company" && selectedCompanyId
-          ? await resolveCompanyPosSale(selectedCompanyId)
-          : await resolveCashPosSale({ noteName: cashNoteName });
+      const isCompanySale = buyerType === "company" && !!selectedCompanyId;
+      const resolved = isCompanySale
+        ? await resolveCompanyPosSale(selectedCompanyId)
+        : await resolveCashPosSale({ noteName: cashNoteName });
 
       const created = await apiClient.post<{ id: string }>("/invoices", {
-        customerId: resolved.customerId,
-        carId: resolved.carId,
-        ...(resolved.companyId ? { companyId: resolved.companyId } : {}),
+        ...("customerId" in resolved
+          ? { customerId: resolved.customerId, carId: resolved.carId }
+          : {}),
+        ...("companyId" in resolved ? { companyId: resolved.companyId } : {}),
         services: selectedServices.map((s) => ({
           serviceId: s.serviceId,
           price: s.price,
@@ -280,7 +319,9 @@ export function PosPage() {
           unitPrice: p.unitPrice,
         })),
         finalPrice,
-        notes: resolved.notes,
+        notes: "notes" in resolved ? resolved.notes : undefined,
+        paymentMethod: isCompanySale ? "CREDIT" : "CASH",
+        paidAmount: isCompanySale ? 0 : finalPrice,
       });
 
       await apiClient.patch(`/invoices/${created.id}/status`, {
@@ -352,20 +393,18 @@ export function PosPage() {
               <div className="grid gap-2 p-4 sm:grid-cols-2 xl:grid-cols-3">
                 {catalogTab === "products"
                   ? filteredProducts.map((product) => {
-                      const inCart = selectedProducts.some(
+                      const line = selectedProducts.find(
                         (p) => p.productId === product.id,
                       );
-                      const out = Number(product.stock) <= 0;
+                      const count = line ? lineCount(line) : 0;
+                      const out = maxProductCount(product) <= 0;
                       return (
-                        <button
+                        <div
                           key={product.id}
-                          type="button"
-                          disabled={out}
-                          onClick={() => addProduct(product)}
                           className={cn(
-                            "flex flex-col rounded-xl border p-3 text-start transition-all hover:border-primary hover:shadow-md",
-                            inCart && "border-primary bg-primary/5 ring-1 ring-primary/30",
-                            out && "cursor-not-allowed opacity-50",
+                            "flex flex-col rounded-xl border p-3 text-start",
+                            count > 0 && "border-primary bg-primary/5 ring-1 ring-primary/30",
+                            out && "opacity-50",
                           )}
                         >
                           {product.photos?.[0] ? (
@@ -383,15 +422,51 @@ export function PosPage() {
                             {product.name}
                           </span>
                           <span className="mt-1 text-base font-bold text-primary">
-                            {Number(product.salePrice).toLocaleString()}{" "}
+                            {Number(product.salePrice).toLocaleString("en-US")}{" "}
                             {t.currency.symbol}
                           </span>
-                          {out && (
-                            <Badge variant="destructive" className="mt-1 w-fit text-xs">
+                          <span className="mt-0.5 text-xs text-muted-foreground">
+                            {t.products.stock}: {Number(product.stock)}
+                          </span>
+                          {out ? (
+                            <Badge variant="destructive" className="mt-2 w-fit text-xs">
                               {t.products.outOfStock}
                             </Badge>
+                          ) : (
+                            <div className="mt-2 flex items-center justify-between gap-2">
+                              <span className="text-xs text-muted-foreground">
+                                {count > 0
+                                  ? `${count} × ${Number(product.salePrice).toLocaleString("en-US")}`
+                                  : t.invoices.quantity}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="size-8"
+                                  disabled={count <= 0}
+                                  onClick={() => setProductCount(product, count - 1)}
+                                >
+                                  <Minus className="size-4" />
+                                </Button>
+                                <span className="w-6 text-center text-sm font-semibold">
+                                  {count}
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="size-8"
+                                  disabled={count >= maxProductCount(product)}
+                                  onClick={() => setProductCount(product, count + 1)}
+                                >
+                                  <Plus className="size-4" />
+                                </Button>
+                              </div>
+                            </div>
                           )}
-                        </button>
+                        </div>
                       );
                     })
                   : filteredServices.map((service) => {
@@ -415,7 +490,7 @@ export function PosPage() {
                             {service.name}
                           </span>
                           <span className="mt-1 text-base font-bold text-primary">
-                            {Number(service.price).toLocaleString()}{" "}
+                            {Number(service.price).toLocaleString("en-US")}{" "}
                             {t.currency.symbol}
                           </span>
                         </button>
@@ -435,7 +510,8 @@ export function PosPage() {
               {t.pos.cart}
             </span>
             <Badge variant="secondary">
-              {selectedProducts.length + selectedServices.length}
+              {selectedServices.length +
+                selectedProducts.reduce((sum, line) => sum + lineCount(line), 0)}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -465,8 +541,7 @@ export function PosPage() {
               </Button>
             </CollapsibleTrigger>
             <CollapsibleContent className="mt-3 space-y-3 rounded-lg border bg-muted/30 p-3">
-              {canPickCompany && (
-                <div className="space-y-2">
+              <div className="space-y-2">
                   <Label className="text-xs">{t.pos.buyerType}</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
@@ -491,7 +566,6 @@ export function PosPage() {
                     </Button>
                   </div>
                 </div>
-              )}
 
               {buyerType === "cash" ? (
                 <>
@@ -573,7 +647,7 @@ export function PosPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{s.serviceName}</p>
                     <p className="text-xs text-primary">
-                      {s.price.toLocaleString()} {t.currency.symbol}
+                      {s.price.toLocaleString("en-US")} {t.currency.symbol}
                     </p>
                   </div>
                   <Button
@@ -589,37 +663,56 @@ export function PosPage() {
                   </Button>
                 </div>
               ))}
-              {selectedProducts.map((p, i) => (
-                <div
-                  key={p.productId}
-                  className="flex items-center justify-between gap-2 rounded-lg border bg-card p-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{p.productName}</p>
-                    <p className="text-xs text-primary">
-                      {p.unitPrice.toLocaleString()} {t.currency.symbol}
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 shrink-0 text-destructive"
-                    onClick={() =>
-                      setSelectedProducts((prev) => prev.filter((_, idx) => idx !== i))
-                    }
+              {selectedProducts.map((p) => {
+                const product = products.find((item) => item.id === p.productId);
+                const count = lineCount(p);
+                return (
+                  <div
+                    key={p.productId}
+                    className="flex items-center justify-between gap-2 rounded-lg border bg-card p-2"
                   >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </div>
-              ))}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{p.productName}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {count} × {p.originalPrice.toLocaleString("en-US")}
+                      </p>
+                      <p className="text-xs font-medium text-primary">
+                        {p.unitPrice.toLocaleString("en-US")} {t.currency.symbol}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        disabled={!product}
+                        onClick={() => product && setProductCount(product, count - 1)}
+                      >
+                        <Minus className="size-4" />
+                      </Button>
+                      <span className="w-6 text-center text-sm font-semibold">{count}</span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="size-8"
+                        disabled={!product || count >= maxProductCount(product)}
+                        onClick={() => product && setProductCount(product, count + 1)}
+                      >
+                        <Plus className="size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </ScrollArea>
 
           <div className="shrink-0 space-y-3 rounded-xl border bg-muted/40 p-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">{t.invoices.totalPrice}</span>
-              <span>{totalPrice.toLocaleString()} {t.currency.symbol}</span>
+              <span>{totalPrice.toLocaleString("en-US")} {t.currency.symbol}</span>
             </div>
             <div className="space-y-1">
               <Label className="text-xs">{t.invoices.finalPrice}</Label>

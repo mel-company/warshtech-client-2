@@ -8,12 +8,7 @@ export function canManageCompanies(user: AuthUser | null): boolean {
   return user.permissions.includes("COMPANIES_WRITE");
 }
 
-/** اختيار شركة في POS — للكاشير (COMPANIES_READ)، مو للأدmin */
+/** اختيار شركة في نقطة البيع — يظهر لكل مستخدم داخل الصفحة */
 export function canPickCompanyInPos(user: AuthUser | null): boolean {
-  if (!user) return false;
-  if (canAccessAdminDashboard(user)) return false;
-  return (
-    user.permissions.includes("COMPANIES_READ") ||
-    user.permissions.includes("COMPANIES_WRITE")
-  );
+  return Boolean(user);
 }

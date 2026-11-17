@@ -84,10 +84,11 @@ export function topCustomersByRevenue(invoices: Invoice[], limit = 10) {
 
   for (const inv of invoices) {
     if (inv.status === "CANCELLED") continue;
-    const id = inv.customer?.id ?? inv.customerId;
+    const id = inv.company?.id ?? inv.customer?.id ?? inv.customerId;
+    if (!id) continue;
     const cur = map.get(id) ?? {
-      name: inv.customer?.name ?? "—",
-      phone: inv.customer?.phone ?? "",
+      name: inv.company?.name ?? inv.customer?.name ?? "—",
+      phone: inv.company?.phone ?? inv.customer?.phone ?? "",
       revenue: 0,
       count: 0,
     };

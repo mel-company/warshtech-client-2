@@ -25,6 +25,7 @@ import {
   Loader2,
   Pencil,
   Printer,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -48,7 +49,9 @@ import {
   getInvoiceBuyerPhone,
   shouldHideInvoiceCar,
   invoiceMatchesSearch,
+  invoiceBalance,
 } from "@/lib/invoice-display";
+import { invoiceWhatsappMessage, whatsappHref } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -942,10 +945,78 @@ function InvoiceForm({ onSubmit, onCancel, isLoading, invoice }: InvoiceFormProp
 // Invoice Detail View
 // =============================================================================
 
-function InvoiceDetail({ invoice }: { invoice: Invoice }) {
+function InvoiceDetail({ invoice: initialInvoice }: { invoice: Invoice }) {
   const { t } = useTranslation();
   const { tenant } = useAuth();
+  const [invoice, setInvoice] = React.useState(initialInvoice);
   const [isPrinting, setIsPrinting] = React.useState(false);
+  const [payAmount, setPayAmount] = React.useState("");
+  const [payMethod, setPayMethod] = React.useState<"CASH" | "CARD" | "TRANSFER">("CASH");
+  const [deliveryInput, setDeliveryInput] = React.useState("");
+  const [isSavingPayment, setIsSavingPayment] = React.useState(false);
+  const [isConfirmingDelivery, setIsConfirmingDelivery] = React.useState(false);
+
+  React.useEffect(() => {
+    setInvoice(initialInvoice);
+  }, [initialInvoice]);
+
+  const balance = invoiceBalance(invoice);
+  const phone = getInvoiceBuyerPhone(invoice);
+  const whatsappUrl = whatsappHref(
+    phone,
+    invoiceWhatsappMessage({
+      workshopName: tenant?.name,
+      invoiceNumber: invoice.invoiceNumber,
+      buyerName: getInvoiceBuyerName(invoice),
+      finalPrice: Number(invoice.finalPrice),
+      currency: t.currency.symbol,
+      deliveryCode: invoice.deliveryCode,
+    }),
+  );
+
+  const handleRecordPayment = async () => {
+    const amount = Number(payAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error(t.validation.required);
+      return;
+    }
+    setIsSavingPayment(true);
+    try {
+      const updated = await apiClient.patch<Invoice>(`/invoices/${invoice.id}/payment`, {
+        amount,
+        method: payMethod,
+      });
+      setInvoice(updated);
+      setPayAmount("");
+      toast.success(t.invoices.paymentSaved);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t.messages.error.general;
+      toast.error(message);
+    } finally {
+      setIsSavingPayment(false);
+    }
+  };
+
+  const handleConfirmDelivery = async () => {
+    if (!deliveryInput.trim()) {
+      toast.error(t.validation.required);
+      return;
+    }
+    setIsConfirmingDelivery(true);
+    try {
+      const updated = await apiClient.post<Invoice>(`/invoices/${invoice.id}/deliver`, {
+        code: deliveryInput.trim(),
+      });
+      setInvoice(updated);
+      setDeliveryInput("");
+      toast.success(t.invoices.deliveryConfirmed);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : t.invoices.deliveryFailed;
+      toast.error(message);
+    } finally {
+      setIsConfirmingDelivery(false);
+    }
+  };
 
   const handlePrint = async () => {
     setIsPrinting(true);
@@ -1023,8 +1094,8 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
         {!shouldHideInvoiceCar(invoice) && (
         <div>
           <p className="text-sm text-muted-foreground">{t.invoices.car}</p>
-          <p className="font-medium">{invoice.car.name} - {invoice.car.number}</p>
-          <p className="text-xs text-muted-foreground">{invoice.car.model} • {invoice.car.color}</p>
+          <p className="font-medium">{invoice.car?.name} - {invoice.car?.number}</p>
+          <p className="text-xs text-muted-foreground">{invoice.car?.model} • {invoice.car?.color}</p>
         </div>
         )}
       </div>
@@ -1078,7 +1149,66 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
           <span>{t.invoices.finalPrice}</span>
           <span>{Number(invoice.finalPrice)} {t.currency.symbol}</span>
         </div>
+        <div className="flex justify-between text-sm">
+          <span>{t.invoices.paid}</span>
+          <span>{Number(invoice.paidAmount ?? 0)} {t.currency.symbol}</span>
+        </div>
+        <div className="flex justify-between text-sm font-medium">
+          <span>{t.invoices.remaining}</span>
+          <span>{balance} {t.currency.symbol}</span>
+        </div>
       </div>
+
+      {balance > 0 && (
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+          <Input
+            type="number"
+            min={0}
+            step="0.01"
+            placeholder={t.invoices.paymentAmount}
+            value={payAmount}
+            onChange={(e) => setPayAmount(e.target.value)}
+          />
+          <select
+            className="h-9 rounded-md border bg-background px-2 text-sm"
+            value={payMethod}
+            onChange={(e) => setPayMethod(e.target.value as "CASH" | "CARD" | "TRANSFER")}
+          >
+            <option value="CASH">{t.invoices.methods.CASH}</option>
+            <option value="CARD">{t.invoices.methods.CARD}</option>
+            <option value="TRANSFER">{t.invoices.methods.TRANSFER}</option>
+          </select>
+          <Button type="button" onClick={() => void handleRecordPayment()} disabled={isSavingPayment}>
+            {isSavingPayment ? <Loader2 className="size-4 animate-spin" /> : t.invoices.recordPayment}
+          </Button>
+        </div>
+      )}
+
+      {invoice.deliveryCode && (
+        <div className="rounded-lg border p-3 space-y-2">
+          <p className="text-sm font-medium">
+            {t.invoices.deliveryCode}: <span dir="ltr">{invoice.deliveryCode}</span>
+          </p>
+          {invoice.deliveredAt ? (
+            <p className="text-sm text-green-700 dark:text-green-400">{t.invoices.delivered}</p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">{t.invoices.deliveryHint}</p>
+              <div className="flex gap-2">
+                <Input
+                  value={deliveryInput}
+                  onChange={(e) => setDeliveryInput(e.target.value)}
+                  placeholder={t.invoices.deliveryCode}
+                  dir="ltr"
+                />
+                <Button type="button" onClick={() => void handleConfirmDelivery()} disabled={isConfirmingDelivery}>
+                  {isConfirmingDelivery ? <Loader2 className="size-4 animate-spin" /> : t.invoices.confirmDelivery}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {invoice.notes && (
         <div>
@@ -1089,7 +1219,15 @@ function InvoiceDetail({ invoice }: { invoice: Invoice }) {
 
       {/* Print Button */}
       <Separator />
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {whatsappUrl && (
+          <Button variant="outline" asChild>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer">
+              <MessageCircle className="ml-2 size-4" />
+              {t.invoices.whatsapp}
+            </a>
+          </Button>
+        )}
         <Button variant="outline" onClick={handlePrint} disabled={isPrinting}>
           {isPrinting ? (
             <Loader2 className="ml-2 size-4 animate-spin" />
@@ -1171,8 +1309,8 @@ function InvoiceRow({ invoice, onView, onEdit, onStatusChange, onDelete, canWrit
           <span className="text-xs text-muted-foreground">—</span>
         ) : (
         <div className="flex flex-col">
-          <span className="text-sm">{invoice.car.name}</span>
-          <span className="text-xs text-muted-foreground">{invoice.car.number}</span>
+          <span className="text-sm">{invoice.car?.name}</span>
+          <span className="text-xs text-muted-foreground">{invoice.car?.number}</span>
         </div>
         )}
       </TableCell>
@@ -1180,6 +1318,11 @@ function InvoiceRow({ invoice, onView, onEdit, onStatusChange, onDelete, canWrit
         <span className="font-medium">
           {Number(invoice.finalPrice)} {t.currency.symbol}
         </span>
+        {invoiceBalance(invoice) > 0 && (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {t.invoices.remaining}: {invoiceBalance(invoice)} {t.currency.symbol}
+          </p>
+        )}
       </TableCell>
       <TableCell>
         <StatusBadge status={invoice.status} />
