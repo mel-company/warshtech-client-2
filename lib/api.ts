@@ -40,6 +40,33 @@ export function getTenantId(): string | null {
   return currentTenantId;
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  const refreshToken = localStorage.getItem("refresh_token");
+  if (!refreshToken) return null;
+
+  const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+  if (!refreshResponse.ok) return null;
+
+  const {
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken,
+    user,
+  } = await refreshResponse.json();
+
+  localStorage.setItem("access_token", newAccessToken);
+  if (newRefreshToken) localStorage.setItem("refresh_token", newRefreshToken);
+  if (user) {
+    localStorage.setItem("auth_user", JSON.stringify(user));
+    window.dispatchEvent(new CustomEvent("auth_user_updated", { detail: user }));
+  }
+  return newAccessToken;
+}
+
 export function clearTenantId() {
   currentTenantId = null;
   if (typeof window !== "undefined") {
@@ -91,45 +118,11 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
 
   // If we get a 401, try to refresh the token
   if (response.status === 401 && accessToken) {
-    const refreshToken =
-      typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null;
-
-    if (refreshToken) {
-      try {
-        const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ refreshToken }),
-        });
-
-        if (refreshResponse.ok) {
-          const { accessToken: newAccessToken, refreshToken: newRefreshToken, user } = await refreshResponse.json();
-
-          // Update tokens and user data in localStorage
-          if (typeof window !== "undefined") {
-            localStorage.setItem("access_token", newAccessToken);
-            localStorage.setItem("refresh_token", newRefreshToken);
-            if (user) {
-              localStorage.setItem("auth_user", JSON.stringify(user));
-              // Notify auth context to pick up the fresh user data
-              window.dispatchEvent(new CustomEvent("auth_user_updated", { detail: user }));
-            }
-          }
-
-          // Retry the original request with the new token
-          response = await makeRequest(newAccessToken);
-        } else {
-          // Refresh failed, clean up and redirect
-          throw new Error("TOKEN_REFRESH_FAILED");
-        }
-      } catch (error) {
-        // Refresh failed, clean up and redirect
-        throw new Error("TOKEN_REFRESH_FAILED");
-      }
-    } else {
-      // No refresh token, clean up and redirect
+    try {
+      const newAccessToken = await refreshAccessToken();
+      if (!newAccessToken) throw new Error("TOKEN_REFRESH_FAILED");
+      response = await makeRequest(newAccessToken);
+    } catch {
       throw new Error("TOKEN_REFRESH_FAILED");
     }
   }
@@ -174,23 +167,35 @@ export const apiClient = {
 
 // Upload via Next.js proxy to avoid browser CORS on direct R2 PUT
 export async function uploadFile(file: File, key: string): Promise<string> {
+  const send = (token: string | null) => {
+    const tenantId = getTenantId();
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("key", key);
+
+    const headers: Record<string, string> = {};
+    if (token) headers.Authorization = `Bearer ${token}`;
+    if (tenantId) headers["x-tenant-id"] = tenantId;
+
+    return fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+      headers,
+    });
+  };
+
   const accessToken =
     typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-  const tenantId = getTenantId();
+  let response = await send(accessToken);
 
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("key", key);
-
-  const headers: Record<string, string> = {};
-  if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  if (tenantId) headers["x-tenant-id"] = tenantId;
-
-  const response = await fetch("/api/upload", {
-    method: "POST",
-    body: formData,
-    headers,
-  });
+  if (response.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) {
+      cleanCredentialsAndRedirect();
+      throw new Error("TOKEN_REFRESH_FAILED");
+    }
+    response = await send(refreshed);
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: "Failed to upload file" }));
