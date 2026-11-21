@@ -1,6 +1,7 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 import { cleanCredentialsAndRedirect, isTokenRefreshError } from "./auth-utils";
+import { getSelectedBranchId } from "./branch";
 
 interface ApiOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
@@ -107,6 +108,14 @@ async function api<T>(endpoint: string, options: ApiOptions = {}): Promise<T> {
       };
     }
 
+    const branchId = getSelectedBranchId();
+    if (branchId) {
+      config.headers = {
+        ...config.headers,
+        "x-branch-id": branchId,
+      };
+    }
+
     if (body) {
       config.body = JSON.stringify(body);
     }
@@ -176,6 +185,8 @@ export async function uploadFile(file: File, key: string): Promise<string> {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     if (tenantId) headers["x-tenant-id"] = tenantId;
+    const branchId = getSelectedBranchId();
+    if (branchId) headers["x-branch-id"] = branchId;
 
     return fetch("/api/upload", {
       method: "POST",

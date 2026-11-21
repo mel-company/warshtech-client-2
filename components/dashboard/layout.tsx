@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip'
 import { AppSidebar } from '@/components/dashboard/app-sidebar'
 import { NotificationBell } from '@/components/dashboard/notification-bell'
+import { BranchProvider, BranchSwitcher } from '@/components/dashboard/branch-context'
 import {
   buildNavContextFromUser,
   canAccessPath,
@@ -77,13 +78,14 @@ function DashboardHeader() {
   const title = item ? t.nav[item.labelKey] : t.nav.dashboard
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur supports-backdrop-filter:bg-background/60">
       <SidebarTrigger className="md:hidden">
         <Menu className="size-5" />
       </SidebarTrigger>
       <div className="flex flex-1 items-center justify-between">
         <h1 className="text-lg font-semibold">{title}</h1>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <BranchSwitcher />
           <NotificationBell />
           <ThemeToggle />
         </div>
@@ -113,12 +115,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router, navContext])
 
   return (
-    <SidebarProvider defaultOpen>
-      <AppSidebar />
-      <SidebarInset>
-        <DashboardHeader />
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <BranchProvider>
+      <SidebarProvider defaultOpen>
+        <AppSidebar />
+        <SidebarInset>
+          <DashboardHeader />
+          <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        </SidebarInset>
+      </SidebarProvider>
+    </BranchProvider>
   )
 }

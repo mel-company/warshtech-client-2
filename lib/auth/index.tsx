@@ -5,6 +5,7 @@ import type { AuthUser, AuthState } from "@/types";
 import { apiClient, setTenantId, clearTenantId } from "@/lib/api";
 import { cleanCredentialsAndRedirect } from "@/lib/auth-utils";
 import { saveLastRegisteredTenant } from "@/lib/tenant-config";
+import { readWorkshopSubdomain } from "@/lib/workshop-host";
 import {
   hasReceptionistPermissions,
   hasReceptionistReadAccess,
@@ -62,6 +63,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const storedTenant = localStorage.getItem("auth_tenant");
     const accessToken = localStorage.getItem("access_token");
     const storedTenantId = localStorage.getItem("tenant_id");
+    const hostSubdomain = readWorkshopSubdomain();
+
+    if (hostSubdomain) {
+      let sessionSubdomain = "";
+      if (storedTenant) {
+        try {
+          sessionSubdomain = (JSON.parse(storedTenant) as TenantInfo).subdomain;
+        } catch {
+          sessionSubdomain = "";
+        }
+      }
+      if (
+        storedUser &&
+        accessToken &&
+        sessionSubdomain &&
+        sessionSubdomain !== hostSubdomain
+      ) {
+        localStorage.removeItem("auth_user");
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("auth_tenant");
+        localStorage.removeItem("tenant_id");
+        setTenantId(hostSubdomain);
+        setState({ user: null, isAuthenticated: false, isLoading: false });
+        return;
+      }
+      if (!storedUser || !accessToken) {
+        setTenantId(hostSubdomain);
+      }
+    }
 
     if (storedUser && accessToken) {
       try {

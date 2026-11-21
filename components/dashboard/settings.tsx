@@ -18,6 +18,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { workshopUrl } from '@/lib/workshop-host';
+import { BranchesCard } from '@/components/dashboard/branches-card';
 
 // Country configurations with phone prefixes
 const COUNTRY_CONFIGS: Record<string, { prefix: string; name: string; nameAr: string; flag: string; example: string }> = {
@@ -371,9 +373,9 @@ export function SettingsPage() {
             {/* Subdomain Info (Read-only) */}
             <div className="space-y-2">
               <Label>{t.settings?.subdomain || 'النطاق الفرعي'}</Label>
-              <Input value={settings?.subdomain || ''} disabled readOnly />
+              <Input value={settings?.subdomain ? workshopUrl(settings.subdomain) : ''} disabled readOnly dir="ltr" />
               <p className="text-xs text-muted-foreground">
-                {t.settings?.subdomainHint || 'لا يمكن تغيير النطاق الفرعي بعد إنشاء الحساب'}
+                {t.settings?.subdomainHint || 'النطاق الفرعي للورشة كلها، ولا يتغير بعد إنشاء الحساب'}
               </p>
             </div>
 
@@ -396,13 +398,14 @@ export function SettingsPage() {
         {/* Submit Button */}
         {canWrite && (
           <div className="flex justify-end">
-            <Button type="submit" disabled={isSaving} className="min-w-[150px]">
+            <Button type="submit" disabled={isSaving} className="min-w-37.5">
               <Save className="size-4 mr-2" />
               {isSaving ? t.messages.loading : t.actions.save}
             </Button>
           </div>
         )}
       </form>
+      <BranchesCard />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Car, Phone, KeyRound, Loader2, Building2 } from "lucide-react";
+import { Car, Phone, KeyRound, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { getPostLoginPath } from "@/lib/pos-access";
 import { t } from "@/lib/i18n";
@@ -17,15 +17,14 @@ import {
 } from "@/components/ui/card";
 import { toast } from "sonner";
 import type { AuthUser } from "@/types";
-import {
-  FIXED_TENANT_ID,
-  getDefaultTenantId,
-  isTenantLocked,
-} from "@/lib/tenant-config";
+import { saveBranchChoice } from "@/lib/branch";
+import { WorkshopAccessFields } from "@/components/auth/workshop-access";
 
 export function UserLoginPage() {
   const { login, isLoading } = useAuth();
-  const [tenantId, setTenantId] = useState(getDefaultTenantId);
+  const [tenantId, setTenantId] = useState("");
+  const [branchId, setBranchId] = useState("");
+  const [branchCount, setBranchCount] = useState(0);
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -36,12 +35,17 @@ export function UserLoginPage() {
     setError("");
     setIsSubmitting(true);
 
-    const trimmedTenant = (isTenantLocked ? FIXED_TENANT_ID : tenantId).trim();
-    if (!trimmedTenant || !phone || !password) {
-      setError(t("auth.fillAllFields"));
+    const trimmedTenant = tenantId.trim();
+    if (!trimmedTenant || !phone || !password || (branchCount > 1 && !branchId)) {
+      setError(
+        branchCount > 1 && !branchId
+          ? t("auth.branchRequired")
+          : t("auth.fillAllFields"),
+      );
       setIsSubmitting(false);
       return;
     }
+    if (branchId) saveBranchChoice(branchId);
 
     const success = await login(phone, password, trimmedTenant);
     if (success) {
@@ -77,28 +81,14 @@ export function UserLoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              {!isTenantLocked && (
-                <div className="space-y-2">
-                  <Label htmlFor="tenant">{t("auth.tenant")}</Label>
-                  <div className="relative">
-                    <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="tenant"
-                      type="text"
-                      placeholder={t("auth.tenantPlaceholder")}
-                      value={tenantId}
-                      onChange={(e) => setTenantId(e.target.value)}
-                      className="pl-4 pr-10 text-left"
-                      dir="ltr"
-                      disabled={busy}
-                      autoComplete="organization"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {t("auth.tenantHint")}
-                  </p>
-                </div>
-              )}
+              <WorkshopAccessFields
+                tenantId={tenantId}
+                onTenantId={setTenantId}
+                branchId={branchId}
+                onBranchId={setBranchId}
+                onBranchCount={setBranchCount}
+                disabled={busy}
+              />
               <div className="space-y-2">
                 <Label htmlFor="phone">{t("auth.phone")}</Label>
                 <div className="relative">

@@ -389,9 +389,14 @@ export const en = {
     logout: "Logout",
     phone: "Phone Number",
     password: "Password",
-    tenant: "Workshop/Branch",
-    tenantPlaceholder: "Workshop name or ID",
-    tenantHint: "Enter your workshop subdomain or tenant ID from registration",
+    tenant: "Workshop",
+    tenantPlaceholder: "Workshop subdomain",
+    tenantHint: "The subdomain identifies the workshop. If it has more than one branch, choose the branch next",
+    branch: "Branch",
+    branchPlaceholder: "Choose a branch",
+    mainBranch: "Main",
+    allBranches: "All branches",
+    branchRequired: "Choose a branch",
     otp: "Verification Code",
     sendOTP: "Send Verification Code",
     verifyOTP: "Verify Code",
@@ -694,6 +699,20 @@ export const en = {
     pdfInventorySummary:
       "Products: {total} — in stock: {inStock} — low: {low} — out: {out} — inventory value: {value} {currency}",
     pdfPageFooter: "Automated report — Warshtech",
+  },
+
+  settings: {
+    branches: "Branches",
+    branchesHint: "One subdomain for the workshop. Branches are locations inside it.",
+    branchName: "Branch name",
+    branchNamePlaceholder: "Karrada branch",
+    branchAddress: "Address",
+    branchPhone: "Phone",
+    addBranch: "Add branch",
+    mainBranch: "Main",
+    enableBranch: "Enable",
+    disableBranch: "Disable",
+    subdomainUrl: "Workshop address",
   },
 
   messages: {
