@@ -27,6 +27,7 @@ import {
   findNavItemByPath,
   getDefaultNavPath,
 } from '@/lib/dashboard-nav'
+import { isRootSite, openWorkshopPath } from '@/lib/workshop-host'
 
 function ThemeToggle() {
   const { theme, setTheme } = useTheme()
@@ -97,7 +98,8 @@ function DashboardHeader() {
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isLoading, hasPermission } = useAuth()
+  const { user, tenant, isLoading, hasPermission } = useAuth()
+  const [site, setSite] = React.useState<"pending" | "root" | "app">("pending")
 
   const navContext = React.useMemo(
     () => ({
@@ -108,11 +110,25 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   )
 
   React.useEffect(() => {
-    if (isLoading || !user) return
+    setSite(isRootSite() ? "root" : "app")
+  }, [])
+
+  React.useEffect(() => {
+    if (site === "root") {
+      if (!openWorkshopPath(tenant?.subdomain || "", pathname || "/dashboard")) {
+        router.replace("/")
+      }
+      return
+    }
+    if (site !== "app" || isLoading || !user) return
     if (!canAccessPath(navContext, pathname)) {
       router.replace(getDefaultNavPath(navContext))
     }
-  }, [user, isLoading, pathname, router, navContext])
+  }, [site, tenant, user, isLoading, pathname, router, navContext])
+
+  if (site !== "app") {
+    return null
+  }
 
   return (
     <BranchProvider>

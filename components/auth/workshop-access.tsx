@@ -9,7 +9,7 @@ import {
   getDefaultTenantId,
   isTenantLocked,
 } from "@/lib/tenant-config";
-import { readWorkshopSubdomain, workshopUrl } from "@/lib/workshop-host";
+import { readWorkshopSubdomain } from "@/lib/workshop-host";
 import type { PublicWorkshop } from "@/lib/branch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,18 +94,9 @@ export function WorkshopAccessFields({
 
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="tenant">{t("auth.tenant")}</Label>
-        {locked ? (
-          <div className="rounded-md border bg-muted/50 px-3 py-2">
-            <p className="text-sm font-medium" dir="ltr">
-              {workshopUrl(tenantId)}
-            </p>
-            {workshop?.name ? (
-              <p className="text-xs text-muted-foreground">{workshop.name}</p>
-            ) : null}
-          </div>
-        ) : (
+      {!locked && (
+        <div className="space-y-2">
+          <Label htmlFor="tenant">{t("auth.tenant")}</Label>
           <div className="relative">
             <Building2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -120,9 +111,9 @@ export function WorkshopAccessFields({
               autoComplete="organization"
             />
           </div>
-        )}
-        <p className="text-xs text-muted-foreground">{t("auth.tenantHint")}</p>
-      </div>
+          <p className="text-xs text-muted-foreground">{t("auth.tenantHint")}</p>
+        </div>
+      )}
 
       {branches.length > 1 && (
         <div className="space-y-2">

@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/input-otp";
 import { saveBranchChoice } from "@/lib/branch";
 import { WorkshopAccessFields } from "@/components/auth/workshop-access";
+import { openWorkshopPath } from "@/lib/workshop-host";
 
 type AuthStep = "credentials" | "otp";
 
@@ -57,7 +58,9 @@ export function LoginPage() {
 
     const success = await login(phone, password, tenant);
     if (success) {
-      router.push("/dashboard");
+      const stored = localStorage.getItem("auth_tenant");
+      const subdomain = stored ? JSON.parse(stored).subdomain : "";
+      if (!openWorkshopPath(subdomain, "/dashboard")) router.push("/dashboard");
     } else {
       setError(t("auth.loginFailed"));
     }
@@ -89,7 +92,9 @@ export function LoginPage() {
       setError("");
       const success = await verifyOTP(phone, value, otpTenantId);
       if (success) {
-        router.push("/dashboard");
+        const stored = localStorage.getItem("auth_tenant");
+        const subdomain = stored ? JSON.parse(stored).subdomain : "";
+        if (!openWorkshopPath(subdomain, "/dashboard")) router.push("/dashboard");
       } else {
         setError(t("auth.invalidOTP"));
         setOtp("");

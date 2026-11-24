@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import type { AuthUser } from "@/types";
 import { saveBranchChoice } from "@/lib/branch";
 import { WorkshopAccessFields } from "@/components/auth/workshop-access";
+import { openWorkshopPath } from "@/lib/workshop-host";
 
 export function UserLoginPage() {
   const { login, isLoading } = useAuth();
@@ -52,7 +53,10 @@ export function UserLoginPage() {
       const stored = localStorage.getItem("auth_user");
       const user = stored ? (JSON.parse(stored) as AuthUser) : null;
       toast.success(t("auth.loginSuccess"));
-      window.location.href = getPostLoginPath(user);
+      const storedTenant = localStorage.getItem("auth_tenant");
+      const subdomain = storedTenant ? JSON.parse(storedTenant).subdomain : "";
+      const path = getPostLoginPath(user);
+      if (!openWorkshopPath(subdomain, path)) window.location.href = path;
     } else {
       setError(t("auth.loginFailed"));
     }
