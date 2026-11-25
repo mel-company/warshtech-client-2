@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { workshopUrl } from '@/lib/workshop-host';
-import { BranchesCard } from '@/components/dashboard/branches-card';
 
 // Country configurations with phone prefixes
 const COUNTRY_CONFIGS: Record<string, { prefix: string; name: string; nameAr: string; flag: string; example: string }> = {
@@ -405,7 +404,6 @@ export function SettingsPage() {
           </div>
         )}
       </form>
-      <BranchesCard />
     </div>
   );
 }

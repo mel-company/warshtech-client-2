@@ -121,6 +121,8 @@ export interface Employee {
   photo?: string
   hireDate: Date
   isActive: boolean
+  branchId?: string | null
+  branch?: { id: string; name: string } | null
   createdAt: Date
   updatedAt: Date
 }
@@ -166,6 +168,8 @@ export interface User {
   position: UserPosition
   roleId: string | null
   role?: Role
+  branchId?: string | null
+  branch?: { id: string; name: string } | null
   isActive: boolean
   lastLogin?: Date | null
   createdAt: Date
@@ -258,6 +262,7 @@ export interface EmployeeFormData {
   photo?: string
   hireDate: Date
   isActive: boolean
+  branchId?: string
 }
 
 export interface UserFormData {
@@ -267,6 +272,7 @@ export interface UserFormData {
   position: UserPosition
   roleId: string | null
   isActive: boolean
+  branchId?: string
 }
 
 // -----------------------------------------------------------------------------

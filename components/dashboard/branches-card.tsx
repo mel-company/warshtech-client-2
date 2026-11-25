@@ -80,7 +80,7 @@ export function BranchesCard() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <GitBranch className="size-5" />
-          {t.settings?.branches || "الفروع"}
+          {t.settings?.branches || "إدارة الفروع"}
         </CardTitle>
         <CardDescription>
           {t.settings?.branchesHint ||

@@ -41,6 +41,7 @@ export const en = {
     reports: "Reports",
     detailedReports: "Detailed reports",
     settings: "Settings",
+    branches: "Branch management",
     logout: "Logout",
   },
 
@@ -702,7 +703,7 @@ export const en = {
   },
 
   settings: {
-    branches: "Branches",
+    branches: "Branch management",
     branchesHint: "One subdomain for the workshop. Branches are locations inside it.",
     branchName: "Branch name",
     branchNamePlaceholder: "Karrada branch",

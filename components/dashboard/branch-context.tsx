@@ -77,6 +77,14 @@ export function BranchProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+export function useBranch() {
+  const context = React.useContext(BranchContext);
+  if (!context) {
+    throw new Error("useBranch must be used inside BranchProvider");
+  }
+  return context;
+}
+
 export function BranchSwitcher() {
   const { t } = useTranslation();
   const context = React.useContext(BranchContext);

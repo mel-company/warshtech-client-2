@@ -59,6 +59,8 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { ResponsiveModal, ConfirmDialog } from "@/components/responsive-modal";
+import { useBranch } from "@/components/dashboard/branch-context";
+import { ALL_BRANCHES } from "@/lib/branch";
 
 // =============================================================================
 // Employee Form Component
@@ -78,6 +80,7 @@ function EmployeeForm({
   isLoading,
 }: EmployeeFormProps) {
   const { t } = useTranslation();
+  const { branches, choice } = useBranch();
   const [formData, setFormData] = React.useState<EmployeeFormData>({
     name: employee?.name || "",
     position: employee?.position || "technician",
@@ -85,6 +88,12 @@ function EmployeeForm({
     salary: Number(employee?.salary) || 0,
     hireDate: employee?.hireDate || new Date(),
     isActive: employee?.isActive ?? true,
+    branchId:
+      employee?.branchId ||
+      (choice !== ALL_BRANCHES ? choice : "") ||
+      branches.find((branch) => branch.isMain)?.id ||
+      branches[0]?.id ||
+      "",
   });
 
   const handleChange = (
@@ -161,6 +170,27 @@ function EmployeeForm({
             </SelectContent>
           </Select>
         </div>
+
+        {branches.length > 1 && (
+          <div className="space-y-2">
+            <Label>{t.auth.branch}</Label>
+            <Select
+              value={formData.branchId || undefined}
+              onValueChange={(value) => handleChange("branchId", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t.auth.branchPlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {branches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* Salary & Hire Date */}
@@ -302,6 +332,11 @@ function EmployeeRow({
             <span className="text-xs text-muted-foreground" dir="ltr">
               {employee.phone}
             </span>
+            {employee.branch?.name ? (
+              <span className="text-xs text-muted-foreground">
+                {employee.branch.name}
+              </span>
+            ) : null}
           </div>
         </div>
       </TableCell>
@@ -438,7 +473,7 @@ export function EmployeesPage() {
     setIsFetching(true);
     try {
       const response = await apiClient.get<{ data: Employee[]; total: number }>(
-        "/employees",
+        "/employees?take=500",
       );
       setEmployees(
         (response.data || []).map((e) => ({

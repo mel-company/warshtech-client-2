@@ -12,6 +12,7 @@ import {
   UserCog,
   Shield,
   Settings,
+  GitBranch,
   BarChart3,
   CalendarClock,
 } from "lucide-react";
@@ -180,6 +181,18 @@ export const DASHBOARD_NAV_ITEMS: DashboardNavItem[] = [
     labelKey: "roles",
     group: "administration",
     isVisible: ({ hasPermission }) => hasPermission("roles", "read"),
+  },
+  {
+    id: "branches",
+    href: "/dashboard/branches",
+    icon: GitBranch,
+    labelKey: "branches",
+    group: "administration",
+    isVisible: ({ user, hasPermission }) => {
+      if (!user) return false;
+      if (user.role === "Owner") return true;
+      return hasPermission("settings", "read");
+    },
   },
   {
     id: "settings",

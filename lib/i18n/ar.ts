@@ -50,6 +50,7 @@ export const ar = {
     reports: "التقارير",
     detailedReports: "التقارير التفصيلية",
     settings: "الإعدادات",
+    branches: "إدارة الفروع",
     logout: "تسجيل الخروج",
   },
 
@@ -839,7 +840,7 @@ export const ar = {
     phoneExample: 'مثال',
     subdomain: 'النطاق الفرعي',
     subdomainHint: 'النطاق الفرعي للورشة كلها، ولا يتغير بعد إنشاء الحساب',
-    branches: 'الفروع',
+    branches: 'إدارة الفروع',
     branchesHint: 'النطاق الفرعي واحد للورشة. الفروع مواقع داخل نفس الورشة.',
     branchName: 'اسم الفرع',
     branchNamePlaceholder: 'فرع الكرادة',

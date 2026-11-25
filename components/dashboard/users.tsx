@@ -36,6 +36,8 @@ import type {
   Permission,
 } from "@/types";
 import apiClient from "@/lib/api";
+import { useBranch } from "@/components/dashboard/branch-context";
+import { ALL_BRANCHES } from "@/lib/branch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -228,6 +230,7 @@ interface UserFormProps {
 
 function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
   const { t } = useTranslation();
+  const { branches, choice } = useBranch();
   const [showPassword, setShowPassword] = React.useState(false);
   const [roles, setRoles] = React.useState<Role[]>([]);
   const [formData, setFormData] = React.useState<UserFormData>({
@@ -237,6 +240,12 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
     position: user?.position || "viewer",
     roleId: user?.roleId || null,
     isActive: user?.isActive ?? true,
+    branchId:
+      user?.branchId ||
+      (choice !== ALL_BRANCHES ? choice : "") ||
+      branches.find((branch) => branch.isMain)?.id ||
+      branches[0]?.id ||
+      "",
   });
 
   React.useEffect(() => {
@@ -400,6 +409,27 @@ function UserForm({ user, onSubmit, onCancel, isLoading }: UserFormProps) {
             </SelectContent>
           </Select>
         </div>
+
+        {branches.length > 1 && (
+          <div className="space-y-2">
+            <Label>{t.auth.branch}</Label>
+            <Select
+              value={formData.branchId || undefined}
+              onValueChange={(value) => handleChange("branchId", value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t.auth.branchPlaceholder} />
+              </SelectTrigger>
+              <SelectContent>
+                {branches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.id}>
+                    {branch.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       <Separator />
@@ -493,6 +523,11 @@ function UserRow({
             <span className="text-xs text-muted-foreground" dir="ltr">
               {user.phone}
             </span>
+            {user.branch?.name ? (
+              <span className="text-xs text-muted-foreground">
+                {user.branch.name}
+              </span>
+            ) : null}
           </div>
         </div>
       </TableCell>
@@ -613,7 +648,7 @@ export function UsersPage() {
     try {
       setIsFetching(true);
       const data = await apiClient.get<{ data: User[]; total: number }>(
-        "/users",
+        "/users?take=500",
       );
       setUsers(data.data);
     } catch (error) {
